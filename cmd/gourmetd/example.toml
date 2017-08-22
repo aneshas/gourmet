@@ -1,0 +1,27 @@
+[upstreams]
+    [upstreams.backend]
+    balancer="round_robin"
+    provider="static"
+
+        [[upstreams.backend.servers]]
+            path="http://api.foo1.bar"
+            weight=5    
+        [[upstreams.backend.servers]]
+            path="http://google.com"
+
+    [upstreams.front]
+        provider="static"
+        balancer="round_robin"
+
+        [[upstreams.front.servers]]
+            path="http://api.bar1.baz"
+            weight=5    
+
+[server]
+port=8080
+    [[server.locations]]
+        location="api/.+[/]"
+        upstream="backend"
+    [[server.locations]]
+        location="static/.+[/]"
+        upstream="front"
