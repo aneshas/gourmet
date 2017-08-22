@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-type Router struct {
+type RegExRouter struct {
 	routes []*entry
 }
 
@@ -14,11 +14,11 @@ type entry struct {
 	handler http.Handler
 }
 
-func New() *Router {
-	return &Router{}
+func NewRegEx() *RegExRouter {
+	return &RegExRouter{}
 }
 
-func (r *Router) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
+func (r *RegExRouter) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 	h := r.match(raw)
 	if h == nil {
 		http.NotFound(w, raw)
@@ -27,7 +27,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 	h.ServeHTTP(w, raw)
 }
 
-func (r *Router) match(req *http.Request) http.Handler {
+func (r *RegExRouter) match(req *http.Request) http.Handler {
 	for _, e := range r.routes {
 		if e.route.match(req.URL.Path) {
 			return e.handler
@@ -36,7 +36,7 @@ func (r *Router) match(req *http.Request) http.Handler {
 	return nil
 }
 
-func (router *Router) AddLocation(pattern string, h http.Handler) {
+func (router *RegExRouter) AddLocation(pattern string, h http.Handler) {
 	router.routes = append(router.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: h})
 }
 

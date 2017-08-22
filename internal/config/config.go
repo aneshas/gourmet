@@ -3,7 +3,16 @@ package config
 import (
 	"io"
 
+	"github.com/BurntSushi/toml"
 	"github.com/tonto/gourmet/internal/upstream"
+)
+
+const (
+	RoundRobinAlg = "round_robin"
+)
+
+const (
+	StaticProvider = "static"
 )
 
 // Provider represents an interface that should be implemented
@@ -20,14 +29,39 @@ type Provider interface {
 
 // TODO - Maybe accept io.Reader and implement it under platform
 func New(r io.Reader) (*Config, error) {
-	cfg, err := parse(r)
-	if err != nil {
-		return nil, err
-	}
-	c := Config{cfg}
-	return &c, err
+	return parse(r)
 }
 
 type Config struct {
-	*config
+	Upstreams map[string]Upstream
+	Server    Server
+}
+
+type Upstream struct {
+	Balancer string
+	Provider string
+
+	// Servers should be ignored if Provider is not static
+	Servers []UpstreamServer
+}
+
+type UpstreamServer struct {
+	Path   string
+	Weight int
+}
+
+type Server struct {
+	Port      int
+	Locations []ServerLocation
+}
+
+type ServerLocation struct {
+	RegEx    string `toml:"location"`
+	Upstream string
+}
+
+func parse(r io.Reader) (*Config, error) {
+	cfg := Config{}
+	_, err := toml.DecodeReader(r, &cfg)
+	return &cfg, err
 }

@@ -1,17 +1,14 @@
+// Package upstream provides upstream request handling
 package upstream
 
-type Algorithm int
-
-type Upstream struct {
-	Name    string
-	Servers []*Server
-}
-
+// Request represents upstream request
 type Request struct {
 	F    func(string) error
 	Done chan error
 }
 
+// NewServer creates new upstream server instance
+// and starts queue handler
 func NewServer(uri string, w int) *Server {
 	h := Server{
 		Enqueue: make(chan *Request, 100),
@@ -22,11 +19,12 @@ func NewServer(uri string, w int) *Server {
 	return &h
 }
 
+// Server represents upstream server abstraction
+// It holds server properties and maintains a request queue
 type Server struct {
-	Enqueue  chan *Request
-	reqCount int32
-	uri      string
-	weight   int
+	Enqueue chan *Request
+	uri     string
+	weight  int
 }
 
 func (h *Server) loop() {
