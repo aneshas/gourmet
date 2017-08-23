@@ -1,0 +1,10 @@
+[upstreams]
+    
+[server]
+port=80
+    [[server.locations]]
+        location="/api"
+        upstream="backend"
+    [[server.locations]]
+        location="/"
+        upstream="front"

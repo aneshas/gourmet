@@ -1,0 +1,19 @@
+[upstreams]
+    [upstreams.backend]
+    balancer="round_robin"
+    provider="static"
+
+        [[upstreams.backend.servers]]
+            path=""
+            weight=5    
+        [[upstreams.backend.servers]]
+            path="http://api.foo2.com"
+
+[server]
+port=80
+    [[server.locations]]
+        location="/api"
+        upstream="backend"
+    [[server.locations]]
+        location="/"
+        upstream="front"
