@@ -5,6 +5,9 @@
 
 Gourmet is a light weight load balancer written in Go as a personal experiment.
 
+Primary use would be to load balance http requests, but it should be possible to 
+easily extend it to balance any other type of load and/or protocol.
+
 I am planning on implementing round robin, random, least conns and JIQ algorithms, but
 at this moment only round robin with weight adjustment is available, more coming soon though.
 
@@ -51,5 +54,6 @@ port=80 # default is 8080
 - [ ] Complete test coverage
 - [ ] SSL configuration support
 - [ ] Implement other balancing algorithms
+- [ ] Provide an example with alternative balancing purpose
 - [ ] Make it distributed
 - [ ] Provide an example setup using kubernetes
