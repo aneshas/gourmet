@@ -2,8 +2,8 @@ box: golang
 
 test:
   steps:
-    - golint:
-      exclude: "vendor/.+go|mock/.+go|.+_mock.go"
+    #    - golint:
+    #      exclude: "vendor/.+go|mock/.+go|.+_mock.go"
     - script:
       name: workspace setup 
       code: |
