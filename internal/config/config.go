@@ -107,6 +107,7 @@ func getServers(ups *cfgUpstream) ([]*upstream.Server, error) {
 }
 
 type config struct {
+	// TODO - Add SSL cert and keyfile
 	Upstreams map[string]*cfgUpstream
 	Server    *server
 }

@@ -1,0 +1,18 @@
+box: golang
+
+test:
+  steps:
+    - golint:
+      exclude: "vendor/.+go|mock/.+go|.+_mock.go"
+    - script:
+      name: workspace setup 
+      code: |
+        mkdir -p $GOPATH/src/github.com/tonto/gourmet
+        cp -R * $GOPATH/src/github.com/tonto/gourmet/ 
+    - anes/goveralls:
+      cwd: $GOPATH/src/github.com/tonto/gourmet/
+    - script:
+      cwd: $GOPATH/src/github.com/tonto/gourmet/
+      name: test 
+      code: |
+        go test -race $(go list ./... | grep -v /vendor/)
