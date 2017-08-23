@@ -52,8 +52,10 @@ port=80 # default is 8080
 
 ## TODO
 - [ ] Complete test coverage
+- [ ] Passive health checks
 - [ ] SSL configuration support
 - [ ] Implement other balancing algorithms
+- [ ] Implement different server providers (etcd, consul...?)
 - [ ] Provide an example with alternative balancing purpose
 - [ ] Make it distributed
 - [ ] Provide an example setup using kubernetes
