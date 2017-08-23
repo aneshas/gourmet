@@ -1,4 +1,3 @@
-// Package balancer provides different balancing algorithms
 package balancer
 
 import (
@@ -9,31 +8,49 @@ import (
 
 // NewRoundRobin creates new RoundRobin instance
 func NewRoundRobin(s []*upstream.Server) *RoundRobin {
-	rr := RoundRobin{
+	bl := RoundRobin{
 		servers: s,
+		wmap:    make(map[*upstream.Server]int),
 	}
-	return &rr
+
+	return &bl
 }
 
-// RoundRobin presents round robin load balancing algorithm
+// RoundRobin represents round robin load balancer
 type RoundRobin struct {
 	servers []*upstream.Server
+	wmap    map[*upstream.Server]int
 	next    int32
 	m       sync.Mutex
 }
 
-// NextHost returns next available host to receive traffic
-func (rr *RoundRobin) NextServer() *upstream.Server {
-	rr.m.Lock()
-	defer rr.m.Unlock()
+// NextHost returns next available upstream server to receive traffic
+func (bl *RoundRobin) NextServer() *upstream.Server {
+	bl.m.Lock()
+	defer bl.m.Unlock()
 
-	i := rr.next
+	i := bl.next
+	next := bl.next + 1
 
-	if i >= int32(len(rr.servers)) {
-		rr.next = 1
-		return rr.servers[0]
+	if i >= int32(len(bl.servers)) {
+		next = 1
+		i = 0
 	}
 
-	rr.next += 1
-	return rr.servers[i]
+	cs := bl.servers[i]
+
+	if cs.Weight() > 1 {
+		nc := bl.wmap[cs] + 1
+		if nc == cs.Weight() {
+			bl.wmap[cs] = 0
+		}
+		if nc < cs.Weight() {
+			next = i
+			bl.wmap[cs] += 1
+		}
+	}
+
+	bl.next = next
+
+	return bl.servers[i]
 }

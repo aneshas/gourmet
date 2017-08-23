@@ -27,6 +27,10 @@ type Server struct {
 	weight  int
 }
 
+func (s *Server) Weight() int {
+	return s.weight
+}
+
 func (h *Server) loop() {
 	for r := range h.Enqueue {
 		r.Done <- r.F(h.uri)
