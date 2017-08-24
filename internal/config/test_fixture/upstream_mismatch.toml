@@ -20,7 +20,7 @@
 [server]
 port=80
     [[server.locations]]
-        location="/api"
+        path="/api"
     [[server.locations]]
-        location="/"
-        upstream="foo"
+        path="/"
+        http_pass="foo"

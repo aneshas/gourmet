@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/tonto/gourmet/cmd/gourmetd/ingres"
-	"github.com/tonto/gourmet/cmd/gourmetd/location"
 	"github.com/tonto/gourmet/internal/config"
+	"github.com/tonto/gourmet/internal/platform/protocol"
 	"github.com/tonto/kit/http"
 	"github.com/tonto/kit/http/middleware"
 )
@@ -32,10 +32,17 @@ func main() {
 	bmap, err := cfg.BalanceLocations()
 	checkErr(err)
 
+	ig := ingres.NewRegEx()
+
+	for rx, bl := range bmap {
+		// TODO - determine type of protocol by looking at Protocol in location list
+		ig.AddLocation(rx, protocol.NewHTTP(bl))
+	}
+
 	logger := log.New(os.Stdout, "gourmet => ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	sv := http.NewServer(
-		http.WithHandler(mustMakeIg(bmap)),
+		http.WithHandler(ig),
 		http.WithLogger(logger),
 		http.WithMiddleware(
 			middleware.CORS(),
@@ -43,16 +50,6 @@ func main() {
 	)
 
 	log.Fatal(sv.Run(cfg.ServerPort))
-}
-
-func mustMakeIg(m config.LocationBalancers) *ingres.RegExRouter {
-	ig := ingres.NewRegEx()
-
-	for rx, bl := range m {
-		ig.AddLocation(rx, location.New(bl))
-	}
-
-	return ig
 }
 
 func checkErr(err error) {

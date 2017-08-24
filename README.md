@@ -21,24 +21,24 @@ Here is an example configuration with all the options that are configurable at t
     provider="static"      # default static
 
         [[upstreams.backend.servers]]
-            path="http://api1.foo.bar"
+            path="api1.foo.bar"
             weight=5 # optional weight
         [[upstreams.backend.servers]]
-            path="http://api2.foo.bar"
+            path="api2.foo.bar"
         [[upstreams.backend.servers]]
-            path="http://api3.foo.bar"
+            path="api3.foo.bar"
 
     [upstreams.front]
         provider="static"
         balancer="round_robin"
 
         [[upstreams.front.servers]]
-            path="http://static1.foo.bar"
+            path="static1.foo.bar"
             weight=2    
         [[upstreams.front.servers]]
-            path="http://static2.foo.bar"
+            path="static2.foo.bar"
         [[upstreams.front.servers]]
-            path="http://static3.foo.bar"
+            path="static3.foo.bar"
 
 [server]
 port=80 # default is 8080
@@ -52,10 +52,11 @@ port=80 # default is 8080
 
 ## TODO
 - [ ] Complete test coverage
+- [ ] Add nice error pages
 - [ ] Passive health checks
 - [ ] SSL configuration support
 - [ ] Implement other balancing algorithms
 - [ ] Implement different server providers (etcd, consul...?)
 - [ ] Provide an example with alternative balancing purpose
-- [ ] Make it distributed
+- [ ] Implement high availability (like nginx)
 - [ ] Provide an example setup using kubernetes

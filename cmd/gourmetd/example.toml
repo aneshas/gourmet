@@ -4,10 +4,10 @@
     provider="static"
 
         [[upstreams.backend.servers]]
-            path="http://api.foo1.bar"
+            path="api.foo1.bar"
             weight=5    
         [[upstreams.backend.servers]]
-            path="http://google.com"
+            path="google.com"
 
     [upstreams.front]
         provider="static"
@@ -20,8 +20,8 @@
 [server]
 port=8080
     [[server.locations]]
-        location="api/.+[/]"
-        upstream="backend"
+        path="api/.+[/]"
+        http_pass="backend"
     [[server.locations]]
-        location="static/.+[/]"
-        upstream="front"
+        path="static/.+[/]"
+        http_pass="front"

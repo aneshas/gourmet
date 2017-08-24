@@ -24,7 +24,7 @@ type RoundRobin struct {
 	m       sync.Mutex
 }
 
-// NextHost returns next available upstream server to receive traffic
+// NextServer returns next available upstream server to receive traffic
 func (bl *RoundRobin) NextServer() *upstream.Server {
 	bl.m.Lock()
 	defer bl.m.Unlock()
@@ -46,7 +46,7 @@ func (bl *RoundRobin) NextServer() *upstream.Server {
 		}
 		if nc < cs.Weight() {
 			next = i
-			bl.wmap[cs] += 1
+			bl.wmap[cs]++
 		}
 	}
 

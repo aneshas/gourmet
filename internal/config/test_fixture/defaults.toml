@@ -16,8 +16,8 @@
 
 [server]
     [[server.locations]]
-        location="/api"
-        upstream="backend"
+        path="/api"
+        http_pass="backend"
     [[server.locations]]
-        location="/"
-        upstream="front"
+        path="/"
+        http_pass="front"

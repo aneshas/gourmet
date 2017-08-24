@@ -11,6 +11,7 @@ type Request struct {
 // and starts queue handler
 func NewServer(uri string, w int) *Server {
 	h := Server{
+		// TODO - This should be configurable
 		Enqueue: make(chan *Request, 100),
 		uri:     uri,
 		weight:  w,
@@ -27,12 +28,14 @@ type Server struct {
 	weight  int
 }
 
+// Weight returns weight assigned to upstream server
 func (s *Server) Weight() int {
 	return s.weight
 }
 
-func (h *Server) loop() {
-	for r := range h.Enqueue {
-		r.Done <- r.F(h.uri)
+func (s *Server) loop() {
+	for r := range s.Enqueue {
+		// TODO - handle panic
+		r.Done <- r.F(s.uri)
 	}
 }

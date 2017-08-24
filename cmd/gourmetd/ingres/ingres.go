@@ -1,3 +1,4 @@
+// Package ingres provides ingres routers
 package ingres
 
 import (
@@ -5,6 +6,7 @@ import (
 	"regexp"
 )
 
+// RegExRouter represents regular expression router
 type RegExRouter struct {
 	routes []*entry
 }
@@ -14,10 +16,12 @@ type entry struct {
 	handler http.Handler
 }
 
+// NewRegEx creates new router instance
 func NewRegEx() *RegExRouter {
 	return &RegExRouter{}
 }
 
+// ServeHTTP implements http.Handler
 func (r *RegExRouter) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 	h := r.match(raw)
 	if h == nil {
@@ -36,8 +40,9 @@ func (r *RegExRouter) match(req *http.Request) http.Handler {
 	return nil
 }
 
-func (router *RegExRouter) AddLocation(pattern string, h http.Handler) {
-	router.routes = append(router.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: h})
+// AddLocation registers location path regex with a location handler
+func (r *RegExRouter) AddLocation(pattern string, h http.Handler) {
+	r.routes = append(r.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: h})
 }
 
 type route struct {

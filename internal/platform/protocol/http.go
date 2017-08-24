@@ -1,31 +1,49 @@
-package location
+package protocol
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/tonto/gourmet/internal/balancer"
 	"github.com/tonto/gourmet/internal/upstream"
 )
 
-func New(bl balancer.Balancer) *Location {
-	s := Location{bl}
+// NewHTTP creates new HTTP instance
+func NewHTTP(bl balancer.Balancer, opts ...HTTPOption) *HTTP {
+	cfg := Config{}
+	for _, o := range opts {
+		o(&cfg)
+	}
+	s := HTTP{
+		balancer: bl,
+		config:   cfg,
+	}
 	return &s
 }
 
-type Location struct {
+// HTTP represents http upstream pass
+type HTTP struct {
 	balancer balancer.Balancer
+	config   Config
 }
 
-func (l *Location) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// Config represents http configuration
+type Config struct {
+	passHeaders    map[string]string
+	requestTimeout time.Duration
+}
+
+// ServerHTTP implements http.Handler
+func (ht *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := context.Background()
 	c, cancel := context.WithTimeout(c, 200*time.Millisecond)
 	defer cancel()
 
-	h := l.balancer.NextServer()
+	h := ht.balancer.NextServer()
 	done := make(chan error, 1)
 
 	h.Enqueue <- &upstream.Request{
@@ -61,12 +79,23 @@ func proxyPass(uri string, r *http.Request) (*http.Response, error) {
 }
 
 func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
-	// TODO - append original req path to uri
-	req, err := http.NewRequest(r.Method, uri, r.Body)
+	// TODO - detect protocol from location http_pass xxx_pass
+	uuri := "http://" + strings.TrimRight(uri, "/") + r.URL.Path
+	req, err := http.NewRequest(r.Method, uuri, r.Body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("X-Forwarded-From", "XXX")
+
+	for h, v := range r.Header {
+		if v != nil && len(v) > 0 && v[0] != "" {
+			req.Header.Add(h, v[0])
+		}
+	}
+
+	req.Header.Add("Connection", "Close")
+	req.Header.Add("X-Real-IP", r.RemoteAddr)
+	req.Header.Add("X-Forwarded-Host", r.Host)
+
 	return req, nil
 }
 

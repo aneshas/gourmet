@@ -23,9 +23,9 @@ const (
 )
 
 var (
-	errUpstreamMismatch  = errors.New("upstreams in server location list don't match up with upstreams.")
-	errNoUpstreams       = errors.New("upstream block missing or no upstreams listed.")
-	errNoServers         = errors.New("if using static upstream server provider (default) server list should not be empty.")
+	errUpstreamMismatch  = errors.New("upstreams in server location list don't match up with upstreams")
+	errNoUpstreams       = errors.New("upstream block missing or no upstreams listed")
+	errNoServers         = errors.New("if using static upstream server provider (default) server list should not be empty")
 	errNoServerPath      = errors.New("upstream server path must not be empty")
 	errNoServer          = errors.New("server block not present")
 	errNoServerLocations = errors.New("no server locations block present")
@@ -60,6 +60,8 @@ func New(r io.Reader) (*Config, error) {
 	return &Config{cfg.Server.Port, cfg}, nil
 }
 
+// LocationBalancers represents location path regex map
+// with their assigned balancer
 type LocationBalancers map[string]balancer.Balancer
 
 // Config represents gourmet config struct and provides
@@ -69,17 +71,18 @@ type Config struct {
 	config     *config
 }
 
+// BalanceLocations retruns location paths with balancers
 func (cfg *Config) BalanceLocations() (LocationBalancers, error) {
 	m := make(map[string]balancer.Balancer)
 
 	for _, loc := range cfg.config.Server.Locations {
-		ups := cfg.config.Upstreams[loc.Upstream]
+		ups := cfg.config.Upstreams[loc.HTTPPass]
 		servers, err := getServers(ups)
 		if err != nil {
 			return nil, err
 		}
 		bl := makeBalancer(ups.Balancer, servers)
-		m[loc.RegEx] = bl
+		m[loc.Path] = bl
 	}
 
 	return m, nil
@@ -131,8 +134,8 @@ type server struct {
 }
 
 type serverLocation struct {
-	RegEx    string `toml:"location"`
-	Upstream string
+	Path     string
+	HTTPPass string `toml:"http_pass"`
 }
 
 func (cfg *config) validate() error {
@@ -165,7 +168,7 @@ func (cfg *config) validate() error {
 	}
 
 	for _, loc := range cfg.Server.Locations {
-		if _, ok := cfg.Upstreams[loc.Upstream]; !ok {
+		if _, ok := cfg.Upstreams[loc.HTTPPass]; !ok {
 			return errUpstreamMismatch
 		}
 	}

@@ -2,16 +2,16 @@ box: golang
 
 test:
   steps:
-    #    - golint:
-    #      exclude: "vendor/.+go|mock/.+go|.+_mock.go"
+    - golint:
+      exclude: "vendor/.+go|mock/.+go|.+_mock.go"
     - script:
       name: workspace setup 
       code: |
         mkdir -p $GOPATH/src/github.com/tonto/gourmet
         cp -R * $GOPATH/src/github.com/tonto/gourmet/ 
-    - anes/goveralls:
-      cwd: $GOPATH/src/github.com/tonto/gourmet/
-      token: $COVERALLS_TOKEN 
+      - anes/goveralls:
+        cwd: $GOPATH/src/github.com/tonto/gourmet/
+        token: $COVERALLS_TOKEN 
     - script:
       cwd: $GOPATH/src/github.com/tonto/gourmet/
       name: test 
