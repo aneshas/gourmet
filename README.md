@@ -21,33 +21,38 @@ Here is an example configuration with all the options that are configurable at t
     provider="static"      # default static
 
         [[upstreams.backend.servers]]
-            path="api1.foo.bar"
-            weight=5 # optional weight
+        path="api1.foo.bar"
+        weight=5 # optional weight
+
         [[upstreams.backend.servers]]
-            path="api2.foo.bar"
+        path="api2.foo.bar"
+
         [[upstreams.backend.servers]]
-            path="api3.foo.bar"
+        path="api3.foo.bar"
 
     [upstreams.front]
-        provider="static"
-        balancer="round_robin"
+    provider="static"
+    balancer="round_robin"
 
         [[upstreams.front.servers]]
-            path="static1.foo.bar"
-            weight=2    
+        path="static1.foo.bar"
+        weight=2    
+
         [[upstreams.front.servers]]
-            path="static2.foo.bar"
+        path="static2.foo.bar"
+
         [[upstreams.front.servers]]
             path="static3.foo.bar"
 
 [server]
 port=80 # default is 8080
     [[server.locations]]
-        location="api/.+[/]"
-        upstream="backend"
+    location="api/.+[/]"
+    upstream="backend"
+
     [[server.locations]]
-        location="static/.+[/]"
-        upstream="front"
+    location="static/.+[/]"
+    upstream="front"
 ```
 
 ## TODO
