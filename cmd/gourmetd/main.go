@@ -1,5 +1,5 @@
 // gourmetd is a gourmet binary that spawns
-// an http server and balances requests recieved
+// an http server and balances requests received
 package main
 
 import (
