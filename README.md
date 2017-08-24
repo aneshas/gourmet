@@ -53,10 +53,10 @@ port=80 # default is 8080
 ## TODO
 - [ ] Complete test coverage
 - [ ] Add nice error pages
-- [ ] Passive health checks
+- [ ] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [ ] SSL configuration support
 - [ ] Implement other balancing algorithms
 - [ ] Implement different server providers (etcd, consul...?)
 - [ ] Provide an example with alternative balancing purpose
-- [ ] Implement high availability (like nginx)
+- [ ] Implement high availability (like nginx) active-passive?
 - [ ] Provide an example setup using kubernetes
