@@ -1,3 +1,7 @@
+<p align="center">
+<img src="docs/img/logo.png" alt="Gourmet" title="Gourmet" width="400" />
+</p>
+
 # Gourmet
 [![wercker status](https://app.wercker.com/status/949708198ad9641d1d0ba724528173f5/s/master "wercker status")](https://app.wercker.com/project/byKey/949708198ad9641d1d0ba724528173f5)
 [![Coverage Status](https://coveralls.io/repos/github/tonto/gourmet/badge.svg?branch=)](https://coveralls.io/github/tonto/gourmet?branch=)
@@ -42,7 +46,7 @@ Here is an example configuration with all the options that are configurable at t
         path="static2.foo.bar"
 
         [[upstreams.front.servers]]
-            path="static3.foo.bar"
+        path="static3.foo.bar"
 
 [server]
 port=80 # default is 8080
@@ -60,6 +64,8 @@ port=80 # default is 8080
 - [ ] Add nice error pages
 - [ ] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [ ] SSL configuration support
+- [ ] Add usage and testing section to readme
+- [ ] Add html and json error responses based on Accept header
 - [ ] Implement other balancing algorithms
 - [ ] Implement different server providers (etcd, consul...?)
 - [ ] Provide an example with alternative balancing purpose
