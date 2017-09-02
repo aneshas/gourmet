@@ -16,6 +16,8 @@
         [[upstreams.front.servers]]
             path="http://api.foo.com"
             weight=5    
+            fail_timeout=5
+            max_fail=15
 
 [server]
 port=80

@@ -1,7 +1,10 @@
 package balancer_test
 
 import (
+	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tonto/gourmet/internal/balancer"
@@ -18,6 +21,15 @@ func TestRoundRobin(t *testing.T) {
 			servers: func() ([]*upstream.Server, []*upstream.Server) {
 				s := dummyServers(5, false)
 				return s, []*upstream.Server{s[0], s[1], s[2], s[3], s[4]}
+			},
+		},
+		"weightless health fail": {
+			n: 5,
+			servers: func() ([]*upstream.Server, []*upstream.Server) {
+				s := dummyServers(5, false)
+				failServer(t, s[1])
+				failServer(t, s[2])
+				return s, []*upstream.Server{s[0], s[3], s[4], s[0], s[3]}
 			},
 		},
 		"weightless overflow": {
@@ -39,6 +51,15 @@ func TestRoundRobin(t *testing.T) {
 			servers: func() ([]*upstream.Server, []*upstream.Server) {
 				s := dummyServers(4, true)
 				return s, []*upstream.Server{s[0], s[1], s[2], s[2], s[3], s[3], s[3], s[0], s[1], s[2], s[2]}
+			},
+		},
+		"weighted overflow health fail": {
+			n: 11,
+			servers: func() ([]*upstream.Server, []*upstream.Server) {
+				s := dummyServers(5, true)
+				failServer(t, s[1])
+				failServer(t, s[4])
+				return s, []*upstream.Server{s[0], s[2], s[2], s[3], s[3], s[3], s[0], s[2], s[2], s[3], s[3]}
 			},
 		},
 	}
@@ -65,7 +86,29 @@ func dummyServers(n int, w bool) []*upstream.Server {
 		if w {
 			wg = i
 		}
-		s = append(s, upstream.NewServer("http://host1.com", wg))
+		s = append(
+			s,
+			upstream.NewServer(
+				"http://host1.com",
+				upstream.WithWeight(wg),
+				upstream.WithFailTimeout(10*time.Millisecond),
+				upstream.WithMaxFail(1),
+				upstream.WithQueueSize(5),
+			),
+		)
 	}
 	return s
+}
+
+func failServer(t *testing.T, s *upstream.Server) {
+	assert.True(t, s.Available())
+	done := make(chan error)
+	s.Enqueue <- &upstream.Request{
+		Done: done,
+		F: func(c context.Context, uri string) error {
+			return fmt.Errorf("foo error")
+		},
+	}
+	<-done
+	assert.False(t, s.Available())
 }

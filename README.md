@@ -12,8 +12,8 @@ Gourmet is a light weight load balancer written in Go as a personal experiment.
 Primary use would be to load balance http requests, but it should be possible to 
 easily extend it to balance any other type of load and/or protocol.
 
-I am planning on implementing round robin, random, least conns and JIQ algorithms, but
-at this moment only round robin with weight adjustment is available, more coming soon though.
+At this moment only round-robin with weight adjustment is available, more coming soon though.
+All balancers also implement configurable passive health checks.
 
 ## Configuration
 Here is an example configuration with all the options that are configurable at this moment:
@@ -59,15 +59,19 @@ port=80 # default is 8080
     upstream="front"
 ```
 
-## TODO
+## TODO v0.1.0
 - [ ] Complete test coverage
-- [ ] Add nice error pages
-- [ ] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
+- [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
+- [ ] Health fail recover
 - [ ] SSL configuration support
 - [ ] Add usage and testing section to readme
+- [ ] Add minimal configuration and full to readme
 - [ ] Add html and json error responses based on Accept header
-- [ ] Implement other balancing algorithms
+- [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
+- [ ] Implement least_conn and random 
+
+## TODO
 - [ ] Implement different server providers (etcd, consul...?)
-- [ ] Provide an example with alternative balancing purpose
-- [ ] Implement high availability (like nginx) active-passive?
+- [ ] Add at least one more protocol 
 - [ ] Provide an example setup using kubernetes
+- [ ] Add cmd to generate config file

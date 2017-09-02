@@ -71,6 +71,7 @@ type Config struct {
 	config     *config
 }
 
+// TODO - Wrong name or this is wrong location for this
 // BalanceLocations retruns location paths with balancers
 func (cfg *Config) BalanceLocations() (LocationBalancers, error) {
 	m := make(map[string]balancer.Balancer)
@@ -102,7 +103,13 @@ func getServers(ups *cfgUpstream) ([]*upstream.Server, error) {
 	switch ups.Provider {
 	case staticProvider:
 		for _, s := range ups.Servers {
-			servers = append(servers, upstream.NewServer(s.Path, s.Weight))
+			servers = append(
+				servers,
+				upstream.NewServer(
+					s.Path,
+					upstream.WithWeight(s.Weight),
+				),
+			)
 		}
 	}
 
@@ -119,12 +126,14 @@ type cfgUpstream struct {
 	Provider string
 
 	// Servers should be ignored if Provider is not static
-	Servers []upstreamServer
+	Servers []*upstreamServer
 }
 
 type upstreamServer struct {
-	Path   string
-	Weight int
+	Path        string
+	Weight      int
+	MaxFail     int `toml:"max_fail"`
+	FailTimeout int `toml:"fail_timeout"`
 }
 
 type server struct {
@@ -182,6 +191,18 @@ func (cfg *config) setUpstreamDefaults(u *cfgUpstream) {
 	}
 	if u.Balancer == "" {
 		u.Balancer = roundRobinAlg
+	}
+	for _, s := range u.Servers {
+		cfg.setUServerDefaults(s)
+	}
+}
+
+func (*config) setUServerDefaults(s *upstreamServer) {
+	if s.MaxFail == 0 {
+		s.MaxFail = 10
+	}
+	if s.FailTimeout == 0 {
+		s.FailTimeout = 1
 	}
 }
 

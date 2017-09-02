@@ -39,17 +39,13 @@ type Config struct {
 
 // ServerHTTP implements http.Handler
 func (ht *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c := context.Background()
-	c, cancel := context.WithTimeout(c, 200*time.Millisecond)
-	defer cancel()
+	s := ht.balancer.NextServer()
+	done := make(chan error)
 
-	h := ht.balancer.NextServer()
-	done := make(chan error, 1)
-
-	h.Enqueue <- &upstream.Request{
+	s.Enqueue <- &upstream.Request{
 		Done: done,
-		F: func(uri string) error {
-			resp, err := proxyPass(uri, r)
+		F: func(c context.Context, uri string) error {
+			resp, err := proxyPass(c, uri, r)
 			if err != nil {
 				return err
 			}
@@ -58,29 +54,29 @@ func (ht *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	select {
-	case err := <-done:
-		if err != nil {
-			fmt.Fprintf(w, err.Error())
-		}
-	case <-c.Done():
-		fmt.Fprintf(w, c.Err().Error())
+	err := <-done
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
 	}
 }
 
-func proxyPass(uri string, r *http.Request) (*http.Response, error) {
+func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, error) {
 	req, err := wrapRequest(uri, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO - don't use default client
-	return http.DefaultClient.Do(req)
+
+	return http.DefaultClient.Do(req.WithContext(c))
 }
 
 func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
 	// TODO - detect protocol from location http_pass xxx_pass
 	uuri := "http://" + strings.TrimRight(uri, "/") + r.URL.Path
+	if r.URL.RawQuery != "" {
+		uuri += "?" + r.URL.RawQuery
+	}
 	req, err := http.NewRequest(r.Method, uuri, r.Body)
 	if err != nil {
 		return nil, err
