@@ -9,7 +9,10 @@ import (
 )
 
 var (
-	ErrPanic              = errors.New("request terminated due to system panic")
+	// ErrPanic represents panic error
+	ErrPanic = errors.New("request terminated due to system panic")
+
+	// ErrPassiveHealthCheck represents passive health check fail
 	ErrPassiveHealthCheck = errors.New("request failed passive health check timeout")
 )
 
@@ -19,6 +22,7 @@ type Request struct {
 	Done chan error
 }
 
+// ServerConfig represents upstream server configuration
 type ServerConfig struct {
 	weight        int
 	maxFail       int
@@ -53,6 +57,8 @@ type Server struct {
 	config   ServerConfig
 }
 
+// Available returns a bool indicating wether
+// a server is available to receive requests
 func (s *Server) Available() bool {
 	if s.currFail >= int32(s.config.maxFail) {
 		return false

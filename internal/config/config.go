@@ -10,10 +10,13 @@ import (
 )
 
 const (
+	// RounRobinAlg represents round robin balancer config label
 	RoundRobinAlg = "round_robin"
 )
 
 const (
+	// StaticProvider represents static
+	// upstream server provider config label
 	StaticProvider = "static"
 )
 
@@ -72,6 +75,7 @@ type Config struct {
 	Server    *Server
 }
 
+// Upstream represents upstream config resource
 type Upstream struct {
 	Balancer string
 	Provider string
@@ -80,6 +84,7 @@ type Upstream struct {
 	Servers []*UpstreamServer
 }
 
+// UpstreamServer represents upstream server config resource
 type UpstreamServer struct {
 	Path        string
 	Weight      int
@@ -87,12 +92,14 @@ type UpstreamServer struct {
 	FailTimeout int `toml:"fail_timeout"`
 }
 
+// Server represents server config resource
 type Server struct {
 	// TODO - Add SSL cert and keyfile
 	Port      int
 	Locations []ServerLocation
 }
 
+// ServerLocation represents location config resource
 type ServerLocation struct {
 	Path     string
 	HTTPPass string `toml:"http_pass"`
