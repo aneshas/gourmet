@@ -21,16 +21,16 @@ func TestParseConfig(t *testing.T) {
 		"server_locations_err":     {expectedErr: errNoServerLocations},
 		"upstream_mismatch":        {expectedErr: errUpstreamMismatch},
 		"defaults": {
-			expectedCfg: &Config{8080, &config{Upstreams: map[string]*cfgUpstream{"front": &cfgUpstream{Balancer: "round_robin", Provider: "static", Servers: []*upstreamServer{&upstreamServer{Path: "http://api.foo.com", Weight: 5, MaxFail: 10, FailTimeout: 1}}}, "backend": &cfgUpstream{Balancer: "round_robin", Provider: "static", Servers: []*upstreamServer{&upstreamServer{Path: "http://api.foo1.com", Weight: 5, MaxFail: 10, FailTimeout: 1}, &upstreamServer{Path: "http://api.foo2.com", Weight: 0, MaxFail: 10, FailTimeout: 1}}}}, Server: &server{Port: 8080, Locations: []serverLocation{serverLocation{Path: "/api", HTTPPass: "backend"}, serverLocation{Path: "/", HTTPPass: "front"}}}}},
+			expectedCfg: &Config{Upstreams: map[string]*Upstream{"front": &Upstream{Balancer: "round_robin", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo.com", Weight: 5, MaxFail: 10, FailTimeout: 1}}}, "backend": &Upstream{Balancer: "round_robin", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo1.com", Weight: 5, MaxFail: 10, FailTimeout: 1}, &UpstreamServer{Path: "http://api.foo2.com", Weight: 0, MaxFail: 10, FailTimeout: 1}}}}, Server: &Server{Port: 8080, Locations: []ServerLocation{ServerLocation{Path: "/api", HTTPPass: "backend"}, ServerLocation{Path: "/", HTTPPass: "front"}}}},
 		},
 		"valid": {
-			expectedCfg: &Config{80, &config{Upstreams: map[string]*cfgUpstream{"front": &cfgUpstream{Balancer: "round_robin", Provider: "static", Servers: []*upstreamServer{&upstreamServer{Path: "http://api.foo.com", Weight: 5, MaxFail: 15, FailTimeout: 5}}}, "backend": &cfgUpstream{Balancer: "round_robin", Provider: "static", Servers: []*upstreamServer{&upstreamServer{Path: "http://api.foo1.com", Weight: 5, MaxFail: 10, FailTimeout: 1}, &upstreamServer{Path: "http://api.foo2.com", Weight: 0, MaxFail: 10, FailTimeout: 1}}}}, Server: &server{Port: 80, Locations: []serverLocation{serverLocation{Path: "/api", HTTPPass: "backend"}, serverLocation{Path: "/", HTTPPass: "front"}}}}},
+			expectedCfg: &Config{Upstreams: map[string]*Upstream{"front": &Upstream{Balancer: "round_robin", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo.com", Weight: 5, MaxFail: 15, FailTimeout: 5}}}, "backend": &Upstream{Balancer: "round_robin", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo1.com", Weight: 5, MaxFail: 10, FailTimeout: 1}, &UpstreamServer{Path: "http://api.foo2.com", Weight: 0, MaxFail: 10, FailTimeout: 1}}}}, Server: &Server{Port: 80, Locations: []ServerLocation{ServerLocation{Path: "/api", HTTPPass: "backend"}, ServerLocation{Path: "/", HTTPPass: "front"}}}},
 		},
 	}
 
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			cfg, err := New(mustOpenConfigF(t, name))
+			cfg, err := Parse(mustOpenConfigF(t, name))
 			assert.Equal(t, c.expectedCfg, cfg)
 			assert.Equal(t, c.expectedErr, err)
 		})

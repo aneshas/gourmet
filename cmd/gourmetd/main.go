@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/tonto/gourmet/cmd/gourmetd/ingres"
+	"github.com/tonto/gourmet/internal/compose"
 	"github.com/tonto/gourmet/internal/config"
 	"github.com/tonto/gourmet/internal/platform/protocol"
 	"github.com/tonto/kit/http"
@@ -26,10 +27,12 @@ func main() {
 	r, err := os.Open(*cfile)
 	checkErr(err)
 
-	cfg, err := config.New(r)
+	cfg, err := config.Parse(r)
 	checkErr(err)
 
-	bmap, err := cfg.BalanceLocations()
+	// TODO - make it recieve a func with regex and protocol params
+	// rename it eg. With(func(string, http.Handler))
+	bmap, err := compose.FromConfig(cfg)
 	checkErr(err)
 
 	ig := ingres.NewRegEx()
@@ -49,7 +52,7 @@ func main() {
 		),
 	)
 
-	log.Fatal(sv.Run(cfg.ServerPort))
+	log.Fatal(sv.Run(cfg.Server.Port))
 }
 
 func checkErr(err error) {

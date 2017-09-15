@@ -64,14 +64,19 @@ port=80 # default is 8080
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [ ] Health fail recover
 - [ ] SSL configuration support
+- [ ] Kubernetes provider using endpoints (watch?)
+- [ ] Add html and json error responses based on Accept header
+
+## TODO v0.2.0
+- [ ] Add access logs
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal configuration and full to readme
-- [ ] Add html and json error responses based on Accept header
 - [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
 - [ ] Implement least_conn and random 
 
 ## TODO
-- [ ] Implement different server providers (etcd, consul...?)
+- [ ] Support for multiple servers
+- [ ] Implement different server providers (etcd, consul, kubernetes?)
 - [ ] Add at least one more protocol 
 - [ ] Provide an example setup using kubernetes
 - [ ] Add cmd to generate config file

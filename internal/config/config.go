@@ -6,16 +6,15 @@ import (
 	"io"
 
 	"github.com/BurntSushi/toml"
-	"github.com/tonto/gourmet/internal/balancer"
 	"github.com/tonto/gourmet/internal/upstream"
 )
 
 const (
-	roundRobinAlg = "round_robin"
+	RoundRobinAlg = "round_robin"
 )
 
 const (
-	staticProvider = "static"
+	StaticProvider = "static"
 )
 
 const (
@@ -43,8 +42,8 @@ type Provider interface {
 	Sync() chan struct{}
 }
 
-// New creates new config instance
-func New(r io.Reader) (*Config, error) {
+// Parse parses config file and creates new config instance
+func Parse(r io.Reader) (*Config, error) {
 	cfg, err := parse(r)
 	if err != nil {
 		return nil, err
@@ -57,104 +56,56 @@ func New(r io.Reader) (*Config, error) {
 		return nil, err
 	}
 
-	return &Config{cfg.Server.Port, cfg}, nil
+	return cfg, nil
 }
 
-// LocationBalancers represents location path regex map
-// with their assigned balancer
-type LocationBalancers map[string]balancer.Balancer
+func parse(r io.Reader) (*Config, error) {
+	cfg := Config{}
+	_, err := toml.DecodeReader(r, &cfg)
+	return &cfg, err
+}
 
 // Config represents gourmet config struct and provides
 // balancer instantiation methods
 type Config struct {
-	ServerPort int
-	config     *config
+	Upstreams map[string]*Upstream
+	Server    *Server
 }
 
-// TODO - Wrong name or this is wrong location for this
-// BalanceLocations retruns location paths with balancers
-func (cfg *Config) BalanceLocations() (LocationBalancers, error) {
-	m := make(map[string]balancer.Balancer)
-
-	for _, loc := range cfg.config.Server.Locations {
-		ups := cfg.config.Upstreams[loc.HTTPPass]
-		servers, err := getServers(ups)
-		if err != nil {
-			return nil, err
-		}
-		bl := makeBalancer(ups.Balancer, servers)
-		m[loc.Path] = bl
-	}
-
-	return m, nil
-}
-
-func makeBalancer(alg string, s []*upstream.Server) balancer.Balancer {
-	switch alg {
-	case roundRobinAlg:
-		return balancer.NewRoundRobin(s)
-	}
-	return nil
-}
-
-func getServers(ups *cfgUpstream) ([]*upstream.Server, error) {
-	var servers []*upstream.Server
-
-	switch ups.Provider {
-	case staticProvider:
-		for _, s := range ups.Servers {
-			servers = append(
-				servers,
-				upstream.NewServer(
-					s.Path,
-					upstream.WithWeight(s.Weight),
-				),
-			)
-		}
-	}
-
-	return servers, nil
-}
-
-type config struct {
-	Upstreams map[string]*cfgUpstream
-	Server    *server
-}
-
-type cfgUpstream struct {
+type Upstream struct {
 	Balancer string
 	Provider string
 
 	// Servers should be ignored if Provider is not static
-	Servers []*upstreamServer
+	Servers []*UpstreamServer
 }
 
-type upstreamServer struct {
+type UpstreamServer struct {
 	Path        string
 	Weight      int
 	MaxFail     int `toml:"max_fail"`
 	FailTimeout int `toml:"fail_timeout"`
 }
 
-type server struct {
+type Server struct {
 	// TODO - Add SSL cert and keyfile
 	Port      int
-	Locations []serverLocation
+	Locations []ServerLocation
 }
 
-type serverLocation struct {
+type ServerLocation struct {
 	Path     string
 	HTTPPass string `toml:"http_pass"`
 }
 
-func (cfg *config) validate() error {
+func (cfg *Config) validate() error {
 	if cfg.Upstreams == nil || len(cfg.Upstreams) == 0 {
 		return errNoUpstreams
 	}
 
 	for _, ups := range cfg.Upstreams {
 		cfg.setUpstreamDefaults(ups)
-		if ups.Provider == staticProvider && (ups.Servers == nil || len(ups.Servers) == 0) {
+		if ups.Provider == StaticProvider && (ups.Servers == nil || len(ups.Servers) == 0) {
 			return errNoServers
 		}
 		for _, s := range ups.Servers {
@@ -185,29 +136,23 @@ func (cfg *config) validate() error {
 	return nil
 }
 
-func (cfg *config) setUpstreamDefaults(u *cfgUpstream) {
+func (cfg *Config) setUpstreamDefaults(u *Upstream) {
 	if u.Provider == "" {
-		u.Provider = staticProvider
+		u.Provider = StaticProvider
 	}
 	if u.Balancer == "" {
-		u.Balancer = roundRobinAlg
+		u.Balancer = RoundRobinAlg
 	}
 	for _, s := range u.Servers {
 		cfg.setUServerDefaults(s)
 	}
 }
 
-func (*config) setUServerDefaults(s *upstreamServer) {
+func (*Config) setUServerDefaults(s *UpstreamServer) {
 	if s.MaxFail == 0 {
 		s.MaxFail = 10
 	}
 	if s.FailTimeout == 0 {
 		s.FailTimeout = 1
 	}
-}
-
-func parse(r io.Reader) (*config, error) {
-	cfg := config{}
-	_, err := toml.DecodeReader(r, &cfg)
-	return &cfg, err
 }

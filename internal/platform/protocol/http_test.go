@@ -62,7 +62,6 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 				"X-Some-Header": "1024",
 			},
 		},
-
 		"test query params": {
 			bl:     &mockbl{RW: &rw{}},
 			reqMtd: "GET",
