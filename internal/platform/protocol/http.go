@@ -2,13 +2,12 @@ package protocol
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/tonto/gourmet/internal/balancer"
+	"github.com/tonto/gourmet/internal/errors"
 	"github.com/tonto/gourmet/internal/upstream"
 )
 
@@ -37,8 +36,10 @@ type Config struct {
 	requestTimeout time.Duration
 }
 
-// ServerHTTP implements http.Handler
-func (ht *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeRequest implement ProtocolHandler ingress interface
+func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
+	var response *http.Response
+
 	s := ht.balancer.NextServer()
 	done := make(chan error)
 
@@ -49,15 +50,13 @@ func (ht *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return err
 			}
-			writeBack(w, resp)
+			response = resp
 			return nil
 		},
 	}
 
 	err := <-done
-	if err != nil {
-		fmt.Fprintf(w, err.Error())
-	}
+	return response, err
 }
 
 func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, error) {
@@ -66,9 +65,21 @@ func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, 
 		return nil, err
 	}
 
-	// TODO - don't use default client
+	client := http.Client{
+		Timeout: 10 * time.Second,
+		// TODO - Use client timeout from config
+	}
 
-	return http.DefaultClient.Do(req.WithContext(c))
+	resp, err := client.Do(req.WithContext(c))
+	if err != nil {
+		return nil, errors.New(
+			http.StatusBadGateway,
+			http.StatusText(http.StatusBadGateway),
+			err.Error(),
+		)
+	}
+
+	return resp, nil
 }
 
 func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
@@ -93,12 +104,4 @@ func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
 	req.Header.Add("X-Forwarded-Host", r.Host)
 
 	return req, nil
-}
-
-func writeBack(w http.ResponseWriter, resp *http.Response) {
-	defer resp.Body.Close()
-	// TODO - write some headers also
-	io.Copy(w, resp.Body)
-	// TODO - write status
-	// TODO - check if w is nil
 }

@@ -25,12 +25,13 @@ type RoundRobin struct {
 }
 
 // NextServer returns next available upstream server to receive traffic
-func (bl *RoundRobin) NextServer() *upstream.Server {
+func (bl *RoundRobin) NextServer() (*upstream.Server, error) {
+	// TODO - Next server has to be selected within 100ms otherwise throw unhealthy err
 	s := bl.nextServer()
 	for !s.Available() {
 		s = bl.nextServer()
 	}
-	return s
+	return s, nil
 }
 
 func (bl *RoundRobin) nextServer() *upstream.Server {
@@ -61,5 +62,4 @@ func (bl *RoundRobin) nextServer() *upstream.Server {
 	bl.next = next
 
 	return bl.servers[i]
-
 }

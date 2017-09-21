@@ -82,7 +82,6 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 			},
 		},
 
-		// TODO - Test pass custom headers
 		// TODO - Test error paths here and below
 	}
 
@@ -114,8 +113,7 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 			uc[name] = make(chan http.Request)
 			m.Unlock()
 
-			w := httptest.NewRecorder()
-			go func() { h.ServeHTTP(w, r) }()
+			go func() { h.ServeRequest(r) }()
 
 			time.Sleep(10 * time.Millisecond)
 
@@ -134,6 +132,7 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 	}
 }
 
+// TODO - Move this to ingress_test.go
 func TestHTTPUpstreamResponse(t *testing.T) {
 	/*
 		"test request timeout": {

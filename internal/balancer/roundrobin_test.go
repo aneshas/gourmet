@@ -15,6 +15,7 @@ func TestRoundRobin(t *testing.T) {
 	cases := map[string]struct {
 		servers func() ([]*upstream.Server, []*upstream.Server)
 		n       int
+		wantErr error
 	}{
 		"weightless": {
 			n: 5,
@@ -62,8 +63,19 @@ func TestRoundRobin(t *testing.T) {
 				return s, []*upstream.Server{s[0], s[2], s[2], s[3], s[3], s[3], s[0], s[2], s[2], s[3], s[3]}
 			},
 		},
+		"all unhealthy": {
+			n: 11,
+			servers: func() ([]*upstream.Server, []*upstream.Server) {
+				s := dummyServers(2, true)
+				failServer(t, s[0])
+				failServer(t, s[1])
+				return s, nil
+			},
+			wantErr: balancer.ErrUpstreamUnavailable,
+		},
 	}
 
+	// TODO - Test all servers unhealthy
 	// TODO Test concurrently
 
 	for name, c := range cases {
@@ -72,7 +84,9 @@ func TestRoundRobin(t *testing.T) {
 			bl := balancer.NewRoundRobin(sv)
 			var seq []*upstream.Server
 			for i := 0; i < c.n; i++ {
-				seq = append(seq, bl.NextServer())
+				srv, err := bl.NextServer()
+				assert.Equal(t, c.wantErr, err)
+				seq = append(seq, srv)
 			}
 			assert.Equal(t, eseq, seq)
 		})

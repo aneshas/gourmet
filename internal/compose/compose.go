@@ -2,6 +2,8 @@
 package compose
 
 import (
+	"time"
+
 	"github.com/tonto/gourmet/internal/balancer"
 	"github.com/tonto/gourmet/internal/config"
 	"github.com/tonto/gourmet/internal/upstream"
@@ -47,6 +49,9 @@ func getServers(ups *config.Upstream) ([]*upstream.Server, error) {
 				upstream.NewServer(
 					s.Path,
 					upstream.WithWeight(s.Weight),
+					upstream.WithFailTimeout(time.Duration(s.FailTimeout)*time.Second),
+					upstream.WithMaxFail(s.MaxFail),
+					upstream.WithQueueSize(100),
 				),
 			)
 		}

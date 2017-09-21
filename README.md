@@ -21,62 +21,73 @@ Here is an example configuration with all the options that are configurable at t
 ```toml
 [upstreams]
     [upstreams.backend]
-    balancer="round_robin" # default round_robin 
-    provider="static"      # default static
+        balancer="round_robin" # default round_robin 
+        provider="static"      # default static
 
         [[upstreams.backend.servers]]
-        path="api1.foo.bar"
-        weight=5 # optional weight
+            path="api1.foo.bar"
+            weight=5 # optional weight
 
         [[upstreams.backend.servers]]
-        path="api2.foo.bar"
+            path="api2.foo.bar"
 
         [[upstreams.backend.servers]]
-        path="api3.foo.bar"
+            path="api3.foo.bar"
 
     [upstreams.front]
-    provider="static"
-    balancer="round_robin"
+        provider="static"
+        balancer="round_robin"
 
         [[upstreams.front.servers]]
-        path="static1.foo.bar"
-        weight=2    
+            path="static1.foo.bar"
+            weight=2    
 
         [[upstreams.front.servers]]
-        path="static2.foo.bar"
+            path="static2.foo.bar"
 
         [[upstreams.front.servers]]
-        path="static3.foo.bar"
+            path="static3.foo.bar"
 
 [server]
-port=80 # default is 8080
-    [[server.locations]]
-    location="api/.+[/]"
-    upstream="backend"
+    port=80 # default is 8080
 
     [[server.locations]]
-    location="static/.+[/]"
-    upstream="front"
+        location="api/.+[/]"
+        upstream="backend"
+
+    [[server.locations]]
+        location="static/.+[/]"
+        upstream="front"
 ```
 
 ## TODO v0.1.0
-- [ ] Complete test coverage
+- [ ] Recieve on req.Context().Done()
+- [ ] Complete test coverage (without compose - see below)
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [ ] Health fail recover
-- [ ] SSL configuration support
-- [ ] Kubernetes provider using endpoints (watch?)
+- [ ] SSL configuration support (add server name to config)
+- [ ] Kube provider using endpoints (watch?) and test integration using minikube
 - [ ] Add html and json error responses based on Accept header
-
-## TODO v0.2.0
-- [ ] Add access logs
+- [ ] Add pass regexp path match toggle
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal configuration and full to readme
+- [ ] Explain config sections eg. upstream static and kube provider
+- [ ] Figure out compose
+- [ ] Deploy docker image with wercer
+
+## TODO v0.2.0
+- [ ] Some benchmarks
+- [ ] Add access logs
+- [ ] Add support for promehteus metrics like eg. infulxdb
+- [ ] provide lets encrypt as an option for automatic ssl
 - [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
 - [ ] Implement least_conn and random 
 
-## TODO
+## TODO Backlog
+- [ ] Use raw net and TCP instead of HTTP?
 - [ ] Support for multiple servers
-- [ ] Implement different server providers (etcd, consul, kubernetes?)
+- [ ] Add option to pass custom headers
+- [ ] Implement different server providers (etcd, consul, ...)
 - [ ] Add at least one more protocol 
-- [ ] Provide an example setup using kubernetes
 - [ ] Add cmd to generate config file
+- [ ] Providers and protocols as .so plugins?

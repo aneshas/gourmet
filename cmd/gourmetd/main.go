@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tonto/gourmet/cmd/gourmetd/ingres"
+	"github.com/tonto/gourmet/cmd/gourmetd/ingress"
 	"github.com/tonto/gourmet/internal/compose"
 	"github.com/tonto/gourmet/internal/config"
 	"github.com/tonto/gourmet/internal/platform/protocol"
@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	//configFile = "/etc/gourmetd.conf"
+	//configFile = "/etc/gourmet/gourmet.conf"
 	configFile = "cmd/gourmetd/example.toml"
 )
 
@@ -35,14 +35,14 @@ func main() {
 	bmap, err := compose.FromConfig(cfg)
 	checkErr(err)
 
-	ig := ingres.NewRegEx()
+	logger := log.New(os.Stdout, "gourmet => ", log.Ldate|log.Ltime)
+
+	ig := ingress.NewHTTP(logger)
 
 	for rx, bl := range bmap {
 		// TODO - determine type of protocol by looking at Protocol in location list
 		ig.AddLocation(rx, protocol.NewHTTP(bl))
 	}
-
-	logger := log.New(os.Stdout, "gourmet => ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	sv := http.NewServer(
 		http.WithHandler(ig),

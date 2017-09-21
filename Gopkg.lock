@@ -41,7 +41,7 @@
   branch = "master"
   name = "github.com/tonto/kit"
   packages = ["http","http/middleware","http/respond"]
-  revision = "08fc6e8c20b084a6d8031b96cbf54f44f4f5f3d2"
+  revision = "ae10304614b43dd5ba96d51a68b09750a3bf453d"
 
 [solve-meta]
   analyzer-name = "dep"

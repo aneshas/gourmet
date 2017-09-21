@@ -32,10 +32,8 @@ type ServerConfig struct {
 
 // NewServer creates new upstream server instance
 // and starts queue handler
-// TODO - add option.go
 func NewServer(uri string, opts ...ServerOption) *Server {
 	cfg := ServerConfig{}
-
 	for _, o := range opts {
 		o(&cfg)
 	}
@@ -45,6 +43,7 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		config:  cfg,
 	}
 	go h.loop()
+	// TODO - start health recover loop
 	return &h
 }
 

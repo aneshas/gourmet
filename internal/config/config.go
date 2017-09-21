@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	// RounRobinAlg represents round robin balancer config label
+	// RoundRobinAlg represents round robin balancer config label
 	RoundRobinAlg = "round_robin"
 )
 
@@ -34,7 +34,7 @@ var (
 )
 
 // Provider represents an interface that should be implemented
-// by upstream providers in order to supply load balancing targets
+// by upstream providers in order to supply load balancing endpoints
 type Provider interface {
 	Servers() []*upstream.Server
 
@@ -51,8 +51,6 @@ func Parse(r io.Reader) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//cfg.setUpstreamDefaults()
 
 	err = cfg.validate()
 	if err != nil {
@@ -112,7 +110,8 @@ func (cfg *Config) validate() error {
 
 	for _, ups := range cfg.Upstreams {
 		cfg.setUpstreamDefaults(ups)
-		if ups.Provider == StaticProvider && (ups.Servers == nil || len(ups.Servers) == 0) {
+		if ups.Provider == StaticProvider &&
+			(ups.Servers == nil || len(ups.Servers) == 0) {
 			return errNoServers
 		}
 		for _, s := range ups.Servers {
