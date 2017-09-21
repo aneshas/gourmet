@@ -86,7 +86,9 @@ func TestRoundRobin(t *testing.T) {
 			for i := 0; i < c.n; i++ {
 				srv, err := bl.NextServer()
 				assert.Equal(t, c.wantErr, err)
-				seq = append(seq, srv)
+				if srv != nil {
+					seq = append(seq, srv)
+				}
 			}
 			assert.Equal(t, eseq, seq)
 		})

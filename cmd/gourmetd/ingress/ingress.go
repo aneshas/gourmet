@@ -51,7 +51,7 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 			http.NotFound(w, raw)
 			return
 		}
-		t.Execute(w, errors.New(
+		t.Execute(w, errors.NewHTTP(
 			http.StatusNotFound,
 			http.StatusText(http.StatusNotFound),
 			"The path "+raw.URL.Path+" could not be found on the server.",
@@ -94,7 +94,7 @@ func (h *HTTP) match(req *http.Request) ProtocolHandler {
 func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "application/json")
 	e := interface{}(err)
-	ge, ok := e.(*errors.Error)
+	ge, ok := e.(*errors.HTTPError)
 	if !ok {
 		fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
 		return
@@ -111,7 +111,7 @@ func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
 func (h *HTTP) writerErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "text/html")
 	e := interface{}(err)
-	ge, ok := e.(*errors.Error)
+	ge, ok := e.(*errors.HTTPError)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Internal error occured")

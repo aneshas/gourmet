@@ -25,7 +25,7 @@ func TestNewError(t *testing.T) {
 
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := errors.New(c.status, c.text, c.desc)
+			err := errors.NewHTTP(c.status, c.text, c.desc)
 			assert.Equal(t, c.want, err.Error())
 		})
 	}

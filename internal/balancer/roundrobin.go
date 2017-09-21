@@ -2,9 +2,12 @@ package balancer
 
 import (
 	"sync"
+	"time"
 
 	"github.com/tonto/gourmet/internal/upstream"
 )
+
+const selectTiemout = 100 * time.Millisecond
 
 // NewRoundRobin creates new RoundRobin instance
 func NewRoundRobin(s []*upstream.Server) *RoundRobin {
@@ -26,9 +29,12 @@ type RoundRobin struct {
 
 // NextServer returns next available upstream server to receive traffic
 func (bl *RoundRobin) NextServer() (*upstream.Server, error) {
-	// TODO - Next server has to be selected within 100ms otherwise throw unhealthy err
+	t := time.Now()
 	s := bl.nextServer()
 	for !s.Available() {
+		if time.Since(t) > selectTiemout {
+			return nil, ErrUpstreamUnavailable
+		}
 		s = bl.nextServer()
 	}
 	return s, nil

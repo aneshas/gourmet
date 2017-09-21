@@ -199,9 +199,9 @@ type mockbl struct {
 
 type rw struct{}
 
-func (m *mockbl) NextServer() *upstream.Server {
+func (m *mockbl) NextServer() (*upstream.Server, error) {
 	m.Next = newServer()
-	return m.Next
+	return m.Next, nil
 }
 
 func newServer() *upstream.Server {

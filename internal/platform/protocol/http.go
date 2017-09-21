@@ -40,7 +40,15 @@ type Config struct {
 func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 	var response *http.Response
 
-	s := ht.balancer.NextServer()
+	s, err := ht.balancer.NextServer()
+	if err != nil {
+		return nil, errors.NewHTTP(
+			http.StatusServiceUnavailable,
+			http.StatusText(http.StatusServiceUnavailable),
+			err.Error(),
+		)
+	}
+
 	done := make(chan error)
 
 	s.Enqueue <- &upstream.Request{
@@ -55,7 +63,7 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 		},
 	}
 
-	err := <-done
+	err = <-done
 	return response, err
 }
 
@@ -72,7 +80,7 @@ func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, 
 
 	resp, err := client.Do(req.WithContext(c))
 	if err != nil {
-		return nil, errors.New(
+		return nil, errors.NewHTTP(
 			http.StatusBadGateway,
 			http.StatusText(http.StatusBadGateway),
 			err.Error(),

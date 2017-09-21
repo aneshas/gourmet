@@ -61,19 +61,20 @@ Here is an example configuration with all the options that are configurable at t
 ```
 
 ## TODO v0.1.0
-- [ ] Recieve on req.Context().Done()
-- [ ] Complete test coverage (without compose - see below)
+- [x] Recieve on req.Context().Done()
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [ ] Health fail recover
+- [ ] Add pass regexp path match toggle
+- [ ] Figure out compose
+- [ ] err template file override
 - [ ] SSL configuration support (add server name to config)
 - [ ] Kube provider using endpoints (watch?) and test integration using minikube
-- [ ] Add html and json error responses based on Accept header
-- [ ] Add pass regexp path match toggle
+- [x] Add html and json error responses based on Accept header
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal configuration and full to readme
 - [ ] Explain config sections eg. upstream static and kube provider
-- [ ] Figure out compose
 - [ ] Deploy docker image with wercer
+- [ ] Complete test coverage (without compose - see below)
 
 ## TODO v0.2.0
 - [ ] Some benchmarks
