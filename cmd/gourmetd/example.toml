@@ -1,10 +1,10 @@
 [upstreams]
     [upstreams.backend]
-    balancer="round_robin"
-    provider="static"
+        balancer="round_robin"
+        provider="static"
 
         [[upstreams.backend.servers]]
-            path="api.foo1.bar"
+            path="localhost:8000"
             weight=5    
         [[upstreams.backend.servers]]
             path="google.com"
@@ -18,10 +18,11 @@
             weight=5    
 
 [server]
-port=8081
+    port=8081
+
     [[server.locations]]
-        path="api/.+[/]"
+        path="api/(.+)/?"
         http_pass="backend"
     [[server.locations]]
-        path="static/.+[/]"
+        path="static/bar/(.+/?)"
         http_pass="front"

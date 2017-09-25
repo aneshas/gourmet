@@ -52,33 +52,34 @@ Here is an example configuration with all the options that are configurable at t
     port=80 # default is 8080
 
     [[server.locations]]
-        location="api/.+[/]"
+        location="api/(.+/?)"
         upstream="backend"
 
     [[server.locations]]
-        location="static/.+[/]"
+        location="static/.+/?"
         upstream="front"
 ```
 
 ## TODO v0.1.0
 - [x] Recieve on req.Context().Done()
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
-- [ ] Health fail recover
-- [ ] Add pass regexp path match toggle
-- [ ] Figure out compose
-- [ ] err template file override
-- [ ] SSL configuration support (add server name to config)
-- [ ] Kube provider using endpoints (watch?) and test integration using minikube
 - [x] Add html and json error responses based on Accept header
+- [x] Add pass regexp path match toggle
+- [ ] Add my toy gopher as a mascot
+- [ ] Health fail recover
+- [ ] SSL configuration support (add server name to config)
+- [ ] Add access logs (to stdout, errs to stderr)
+- [ ] Kube provider using endpoints (watch?) and test integration using minikube
+- [ ] Complete test coverage (without compose - see below)
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal configuration and full to readme
 - [ ] Explain config sections eg. upstream static and kube provider
 - [ ] Deploy docker image with wercer
-- [ ] Complete test coverage (without compose - see below)
+- [ ] Move compose to main (pass it as a func to config.Parse?) 
 
 ## TODO v0.2.0
 - [ ] Some benchmarks
-- [ ] Add access logs
+- [ ] err template file override
 - [ ] Add support for promehteus metrics like eg. infulxdb
 - [ ] provide lets encrypt as an option for automatic ssl
 - [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
@@ -90,5 +91,5 @@ Here is an example configuration with all the options that are configurable at t
 - [ ] Add option to pass custom headers
 - [ ] Implement different server providers (etcd, consul, ...)
 - [ ] Add at least one more protocol 
-- [ ] Add cmd to generate config file
+- [ ] Add cmd option (command) to generate config file
 - [ ] Providers and protocols as .so plugins?

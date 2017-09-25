@@ -28,6 +28,8 @@ type entry struct {
 type ProtocolHandler interface {
 	// ServerRequest implementations should return an upstream
 	// http response ready to send back to clint and a nil err
+	// Maybe it should receive custom Request that holds
+	// headers, body, path - only stuff relevant (so this ingress can be reused with other protocols)
 	ServeRequest(*http.Request) (*http.Response, error)
 }
 
@@ -58,16 +60,27 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 		))
 		return
 	}
+	h.handleReq(w, raw, hdlr)
+}
 
-	resp, err := hdlr.ServeRequest(raw)
+func (h *HTTP) match(r *http.Request) ProtocolHandler {
+	for _, e := range h.routes {
+		if path, ok := e.route.match(r.URL.Path); ok {
+			r.URL.Path = "/" + path
+			return e.handler
+		}
+	}
+	return nil
+}
 
+func (h *HTTP) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
+	resp, err := ph.ServeRequest(r)
 	select {
-	case <-raw.Context().Done():
+	case <-r.Context().Done():
 		return
 	default:
 		if err != nil {
-			// TODO - Write err page (or json)
-			switch raw.Header.Get("Accept") {
+			switch r.Header.Get("Accept") {
 			case "application/json":
 				h.writerJSONErr(w, err)
 			default:
@@ -79,16 +92,6 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 		defer resp.Body.Close()
 		io.Copy(w, resp.Body)
 	}
-
-}
-
-func (h *HTTP) match(req *http.Request) ProtocolHandler {
-	for _, e := range h.routes {
-		if e.route.match(req.URL.Path) {
-			return e.handler
-		}
-	}
-	return nil
 }
 
 func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
@@ -96,15 +99,19 @@ func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
 	e := interface{}(err)
 	ge, ok := e.(*errors.HTTPError)
 	if !ok {
-		fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
+		h.writeInternalErr(w)
 		return
 	}
 	data, err := json.Marshal(ge)
 	if err != nil {
-		fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
+		h.writeInternalErr(w)
 		return
 	}
 	w.Write(data)
+}
+
+func (h *HTTP) writeInternalErr(w http.ResponseWriter) {
+	fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
 }
 
 // TODO - pass err template
@@ -137,9 +144,9 @@ type route struct {
 	*regexp.Regexp
 }
 
-func (r *route) match(target string) bool {
+func (r *route) match(target string) (string, bool) {
 	if m := r.FindStringSubmatch(target); m != nil {
-		return true
+		return m[len(m)-1], true
 	}
-	return false
+	return "", false
 }
