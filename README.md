@@ -65,17 +65,19 @@ Here is an example configuration with all the options that are configurable at t
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [x] Add html and json error responses based on Accept header
 - [x] Add pass regexp path match toggle
-- [ ] Add my toy gopher as a mascot
 - [ ] Health fail recover
 - [ ] SSL configuration support (add server name to config)
+- [ ] Add my toy gopher as a mascot
 - [ ] Add access logs (to stdout, errs to stderr)
+- [ ] CORS Config options for server ???
 - [ ] Kube provider using endpoints (watch?) and test integration using minikube
 - [ ] Complete test coverage (without compose - see below)
+- [ ] Integration test with missbehaving servers, check results in the end
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal configuration and full to readme
 - [ ] Explain config sections eg. upstream static and kube provider
 - [ ] Deploy docker image with wercer
-- [ ] Move compose to main (pass it as a func to config.Parse?) 
+- [X] Move compose to main (pass it as a func to config.Parse?) 
 
 ## TODO v0.2.0
 - [ ] Some benchmarks

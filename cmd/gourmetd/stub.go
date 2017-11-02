@@ -1,33 +1,42 @@
-// Package compose provides gourmet app configurable initializaton
-package compose
+package main
 
 import (
 	"time"
 
+	"github.com/tonto/gourmet/internal/platform/ingress"
+
 	"github.com/tonto/gourmet/internal/balancer"
 	"github.com/tonto/gourmet/internal/config"
+	"github.com/tonto/gourmet/internal/platform/protocol"
 	"github.com/tonto/gourmet/internal/upstream"
 )
 
-// LocationBalancers represents location path regex map
-// with their assigned balancer
-type LocationBalancers map[string]balancer.Balancer
-
-// FromConfig composes app from provided config
-func FromConfig(cfg *config.Config) (LocationBalancers, error) {
+func run(ig *ingress.Ingress, cfg *config.Config) func() {
 	m := make(map[string]balancer.Balancer)
+	qc := []chan struct{}{}
 
 	for _, loc := range cfg.Server.Locations {
 		ups := cfg.Upstreams[loc.HTTPPass]
-		servers, err := getServers(ups)
-		if err != nil {
-			return nil, err
+		servers := getServers(ups)
+		for _, s := range servers {
+			c := make(chan struct{})
+			qc = append(qc, c)
+			go s.Run(c)
 		}
 		bl := makeBalancer(ups.Balancer, servers)
 		m[loc.Path] = bl
 	}
 
-	return m, nil
+	for path, h := range m {
+		// TODO - determine type of protocol by looking at Protocol in location list
+		ig.RegisterLocProto(path, protocol.NewHTTP(h))
+	}
+
+	return func() {
+		for _, c := range qc {
+			c <- struct{}{}
+		}
+	}
 }
 
 func makeBalancer(alg string, s []*upstream.Server) balancer.Balancer {
@@ -38,7 +47,7 @@ func makeBalancer(alg string, s []*upstream.Server) balancer.Balancer {
 	return nil
 }
 
-func getServers(ups *config.Upstream) ([]*upstream.Server, error) {
+func getServers(ups *config.Upstream) []*upstream.Server {
 	var servers []*upstream.Server
 
 	switch ups.Provider {
@@ -57,5 +66,5 @@ func getServers(ups *config.Upstream) ([]*upstream.Server, error) {
 		}
 	}
 
-	return servers, nil
+	return servers
 }

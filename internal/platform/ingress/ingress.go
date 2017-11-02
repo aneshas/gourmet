@@ -13,8 +13,8 @@ import (
 	"github.com/tonto/gourmet/internal/errors"
 )
 
-// HTTP represents http ingress implementation
-type HTTP struct {
+// Ingress represents net/http ingress implementation
+type Ingress struct {
 	routes []*entry
 	logger *log.Logger
 }
@@ -33,19 +33,19 @@ type ProtocolHandler interface {
 	ServeRequest(*http.Request) (*http.Response, error)
 }
 
-// NewHTTP creates new http ingress instance
-func NewHTTP(l *log.Logger) *HTTP {
-	return &HTTP{
+// New creates new http ingress instance
+func New(l *log.Logger) *Ingress {
+	return &Ingress{
 		logger: l,
 	}
 }
 
 // ServeHTTP implements http.Handler
-func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
-	// TODO - Move logging to NewLoggedIngress
+func (h *Ingress) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 	h.logger.Printf("%s %s IP: %s", raw.Method, raw.URL.Path, raw.RemoteAddr)
 	hdlr := h.match(raw)
 	if hdlr == nil {
+		h.logger.Printf("Response: %d %s", http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		// TODO - Check if /etc/gourmet/error.tpl exists
 		t := template.New("error tpl")
 		t, err := t.Parse(defaultErrTpl)
@@ -53,7 +53,7 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 			http.NotFound(w, raw)
 			return
 		}
-		t.Execute(w, errors.NewHTTP(
+		t.Execute(w, errors.New(
 			http.StatusNotFound,
 			http.StatusText(http.StatusNotFound),
 			"The path "+raw.URL.Path+" could not be found on the server.",
@@ -63,7 +63,7 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
 	h.handleReq(w, raw, hdlr)
 }
 
-func (h *HTTP) match(r *http.Request) ProtocolHandler {
+func (h *Ingress) match(r *http.Request) ProtocolHandler {
 	for _, e := range h.routes {
 		if path, ok := e.route.match(r.URL.Path); ok {
 			r.URL.Path = "/" + path
@@ -73,7 +73,7 @@ func (h *HTTP) match(r *http.Request) ProtocolHandler {
 	return nil
 }
 
-func (h *HTTP) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
+func (h *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
 	resp, err := ph.ServeRequest(r)
 	select {
 	case <-r.Context().Done():
@@ -90,18 +90,20 @@ func (h *HTTP) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHand
 		}
 		// TODO - write some headers also
 		defer resp.Body.Close()
+		h.logger.Printf("Response: %d %s", resp.StatusCode, resp.Status)
 		io.Copy(w, resp.Body)
 	}
 }
 
-func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
+func (h *Ingress) writerJSONErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "application/json")
 	e := interface{}(err)
-	ge, ok := e.(*errors.HTTPError)
+	ge, ok := e.(*errors.Error)
 	if !ok {
 		h.writeInternalErr(w)
 		return
 	}
+	h.logger.Printf("Response: %d %s", ge.Status, ge.StatusText)
 	data, err := json.Marshal(ge)
 	if err != nil {
 		h.writeInternalErr(w)
@@ -110,20 +112,25 @@ func (h *HTTP) writerJSONErr(w http.ResponseWriter, err error) {
 	w.Write(data)
 }
 
-func (h *HTTP) writeInternalErr(w http.ResponseWriter) {
+func (h *Ingress) writeInternalErr(w http.ResponseWriter) {
+	h.logger.Printf("Response: %d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
 }
 
 // TODO - pass err template
-func (h *HTTP) writerErr(w http.ResponseWriter, err error) {
+func (h *Ingress) writerErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "text/html")
 	e := interface{}(err)
-	ge, ok := e.(*errors.HTTPError)
+	ge, ok := e.(*errors.Error)
 	if !ok {
+		// TODO - Move this to writeInternalErr
 		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.Printf("Response: %d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		fmt.Fprintf(w, "Internal error occured")
 		return
 	}
+	h.logger.Printf("Response: %d %s", ge.Status, ge.StatusText)
 	t := template.New("error tpl")
 	t, err = t.Parse(defaultErrTpl)
 	if err != nil {
@@ -135,8 +142,8 @@ func (h *HTTP) writerErr(w http.ResponseWriter, err error) {
 	t.Execute(w, ge)
 }
 
-// AddLocation registers location path regex with a location handler
-func (h *HTTP) AddLocation(pattern string, hdlr ProtocolHandler) {
+// RegisterLocProto registers location regex path with a location protocol handler
+func (h *Ingress) RegisterLocProto(pattern string, hdlr ProtocolHandler) {
 	h.routes = append(h.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: hdlr})
 }
 

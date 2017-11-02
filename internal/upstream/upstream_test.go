@@ -131,9 +131,12 @@ func TestServerHealth(t *testing.T) {
 				WithQueueSize(c.buffSz),
 			)
 
+			cc := make(chan struct{})
+			go srv.Run(cc)
+
 			for i := 0; i < c.numReqs; i++ {
 				req := *c.req(i)
-				srv.Enqueue <- &req
+				srv.Enqueue <- req
 				e := <-req.Done
 				if c.expectedErr != nil {
 					assert.Equal(t, c.expectedErr, e)
@@ -142,6 +145,8 @@ func TestServerHealth(t *testing.T) {
 
 			assert.Equal(t, c.expectedAvailability, srv.Available())
 			assert.Equal(t, c.weight, srv.Weight())
+
+			cc <- struct{}{}
 		})
 	}
 }

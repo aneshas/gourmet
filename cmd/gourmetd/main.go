@@ -1,5 +1,3 @@
-// gourmetd is a gourmet binary that spawns
-// an http server and balances requests received
 package main
 
 import (
@@ -7,10 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/tonto/gourmet/cmd/gourmetd/ingress"
-	"github.com/tonto/gourmet/internal/compose"
 	"github.com/tonto/gourmet/internal/config"
-	"github.com/tonto/gourmet/internal/platform/protocol"
+	"github.com/tonto/gourmet/internal/platform/ingress"
 	"github.com/tonto/kit/http"
 	"github.com/tonto/kit/http/middleware"
 )
@@ -27,22 +23,18 @@ func main() {
 	r, err := os.Open(*cfile)
 	checkErr(err)
 
+	// TODO - config.MustParse(r, func(cfg *config.Config) {}) (apply this to stubbing?)
 	cfg, err := config.Parse(r)
 	checkErr(err)
 
-	// TODO - make it recieve a func with regex and protocol params
-	// rename it eg. With(func(string, http.Handler))
-	bmap, err := compose.FromConfig(cfg)
-	checkErr(err)
-
 	logger := log.New(os.Stdout, "gourmet => ", log.Ldate|log.Ltime)
+	ig := ingress.New(logger)
 
-	ig := ingress.NewHTTP(logger)
-
-	for rx, bl := range bmap {
-		// TODO - determine type of protocol by looking at Protocol in location list
-		ig.AddLocation(rx, protocol.NewHTTP(bl))
-	}
+	// TODO - Handle startup / gracefull shutdown better
+	// eg. coordinate stop() with server shutdown
+	// move server from kit to gourmet?
+	stop := run(ig, cfg)
+	defer stop()
 
 	sv := http.NewServer(
 		http.WithHandler(ig),
@@ -52,7 +44,10 @@ func main() {
 		),
 	)
 
-	log.Fatal(sv.Run(cfg.Server.Port))
+	err = sv.Run(cfg.Server.Port)
+	if err != nil {
+		logger.Println("error stopping server", err)
+	}
 }
 
 func checkErr(err error) {

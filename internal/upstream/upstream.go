@@ -38,11 +38,11 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		o(&cfg)
 	}
 	h := Server{
-		Enqueue: make(chan *Request, cfg.queueBufferSz),
+		Enqueue: make(chan Request, cfg.queueBufferSz),
 		uri:     uri,
 		config:  cfg,
 	}
-	go h.loop()
+	// go h.loop()
 	// TODO - start health recover loop
 	return &h
 }
@@ -50,7 +50,7 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 // Server represents upstream server abstraction
 // It holds server properties and maintains a request queue
 type Server struct {
-	Enqueue  chan *Request
+	Enqueue  chan Request
 	uri      string
 	currFail int32
 	config   ServerConfig
@@ -70,17 +70,23 @@ func (s *Server) Weight() int {
 	return s.config.weight
 }
 
-// TODO - Test closing s.Enqueue channel
-func (s *Server) loop() {
-	for r := range s.Enqueue {
-		ctx, cancel := context.WithTimeout(context.Background(), s.config.failTimeout)
-		defer cancel()
+// Run runs a server
+// It is designed to be run async and closed by sending to c chan
+func (s *Server) Run(c chan struct{}) {
+	for {
+		select {
+		case r := <-s.Enqueue:
+			ctx, cancel := context.WithTimeout(context.Background(), s.config.failTimeout)
+			defer cancel()
 
-		err := r.F(ctx, s.uri)
-		if err != nil {
-			atomic.AddInt32(&s.currFail, 1)
+			err := r.F(ctx, s.uri)
+			if err != nil {
+				atomic.AddInt32(&s.currFail, 1)
+			}
+
+			r.Done <- err
+		case <-c:
+			return
 		}
-
-		r.Done <- err
 	}
 }

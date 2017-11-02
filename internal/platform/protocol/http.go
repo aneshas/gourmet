@@ -42,7 +42,7 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 
 	s, err := ht.balancer.NextServer()
 	if err != nil {
-		return nil, errors.NewHTTP(
+		return nil, errors.New(
 			http.StatusServiceUnavailable,
 			http.StatusText(http.StatusServiceUnavailable),
 			err.Error(),
@@ -51,7 +51,7 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 
 	done := make(chan error)
 
-	s.Enqueue <- &upstream.Request{
+	s.Enqueue <- upstream.Request{
 		Done: done,
 		F: func(c context.Context, uri string) error {
 			resp, err := proxyPass(c, uri, r)
@@ -80,7 +80,7 @@ func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, 
 
 	resp, err := client.Do(req.WithContext(c))
 	if err != nil {
-		return nil, errors.NewHTTP(
+		return nil, errors.New(
 			http.StatusBadGateway,
 			http.StatusText(http.StatusBadGateway),
 			err.Error(),

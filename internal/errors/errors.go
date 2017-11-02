@@ -5,19 +5,19 @@ import (
 	"fmt"
 )
 
-// NewHTTP creates new gourmet error
-func NewHTTP(status int, text, desc string) *HTTPError {
-	return &HTTPError{status, text, desc}
+// New creates new gourmet error
+func New(status int, text, desc string) *Error {
+	return &Error{status, text, desc}
 }
 
-// HTTPError represents gourmet http error type
-type HTTPError struct {
+// Error represents gourmet http error
+type Error struct {
 	Status      int    `json:"status"`
 	StatusText  string `json:"status_text"`
 	Description string `json:"description"`
 }
 
-// Error implements error interface
-func (e HTTPError) Error() string {
+// Error returns error string
+func (e Error) Error() string {
 	return fmt.Sprintf("%d %s <%s>", e.Status, e.StatusText, e.Description)
 }
