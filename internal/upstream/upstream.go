@@ -42,8 +42,7 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		uri:     uri,
 		config:  cfg,
 	}
-	// go h.loop()
-	// TODO - start health recover loop
+
 	return &h
 }
 

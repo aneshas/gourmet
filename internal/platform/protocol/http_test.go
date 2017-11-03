@@ -212,6 +212,9 @@ func newServer() *upstream.Server {
 		upstream.WithQueueSize(1),
 	)
 
+	c := make(chan struct{})
+	go func() { s.Run(c) }()
+
 	return s
 }
 

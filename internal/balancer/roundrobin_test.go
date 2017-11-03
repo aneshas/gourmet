@@ -102,15 +102,18 @@ func dummyServers(n int, w bool) []*upstream.Server {
 		if w {
 			wg = i
 		}
+		srv := upstream.NewServer(
+			"http://host1.com",
+			upstream.WithWeight(wg),
+			upstream.WithFailTimeout(10*time.Millisecond),
+			upstream.WithMaxFail(1),
+			upstream.WithQueueSize(5),
+		)
+		c := make(chan struct{})
+		go func() { srv.Run(c) }()
 		s = append(
 			s,
-			upstream.NewServer(
-				"http://host1.com",
-				upstream.WithWeight(wg),
-				upstream.WithFailTimeout(10*time.Millisecond),
-				upstream.WithMaxFail(1),
-				upstream.WithQueueSize(5),
-			),
+			srv,
 		)
 	}
 	return s
@@ -119,7 +122,7 @@ func dummyServers(n int, w bool) []*upstream.Server {
 func failServer(t *testing.T, s *upstream.Server) {
 	assert.True(t, s.Available())
 	done := make(chan error)
-	s.Enqueue <- &upstream.Request{
+	s.Enqueue <- upstream.Request{
 		Done: done,
 		F: func(c context.Context, uri string) error {
 			return fmt.Errorf("foo error")
