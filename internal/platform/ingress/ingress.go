@@ -4,7 +4,6 @@ package ingress
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -41,39 +40,43 @@ func New(l *log.Logger) *Ingress {
 }
 
 // ServeHTTP implements http.Handler
-func (h *Ingress) ServeHTTP(w http.ResponseWriter, raw *http.Request) {
-	h.logger.Printf("%s %s IP: %s", raw.Method, raw.URL.Path, raw.RemoteAddr)
-	hdlr := h.match(raw)
-	if hdlr == nil {
-		h.logger.Printf("Response: %d %s", http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		// TODO - Check if /etc/gourmet/error.tpl exists
-		t := template.New("error tpl")
-		t, err := t.Parse(defaultErrTpl)
-		if err != nil {
-			http.NotFound(w, raw)
-			return
-		}
-		t.Execute(w, errors.New(
-			http.StatusNotFound,
-			http.StatusText(http.StatusNotFound),
-			"The path "+raw.URL.Path+" could not be found on the server.",
-		))
+func (igr *Ingress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	igr.logger.Printf("%s %s IP: %s", r.Method, r.URL.Path, r.RemoteAddr)
+
+	ph, err := igr.match(r)
+	if err != nil {
+		igr.writeRouteErr(w, r)
 		return
 	}
-	h.handleReq(w, raw, hdlr)
+
+	igr.handleReq(w, r, ph)
 }
 
-func (h *Ingress) match(r *http.Request) ProtocolHandler {
-	for _, e := range h.routes {
+func (igr *Ingress) writeRouteErr(w http.ResponseWriter, r *http.Request) {
+	err := writeErrTpl(
+		w,
+		errors.New(
+			http.StatusNotFound,
+			http.StatusText(http.StatusNotFound),
+			"the path "+r.URL.Path+" could not be found on the server.",
+		),
+	)
+	if err != nil {
+		http.NotFound(w, r)
+	}
+}
+
+func (igr *Ingress) match(r *http.Request) (ProtocolHandler, error) {
+	for _, e := range igr.routes {
 		if path, ok := e.route.match(r.URL.Path); ok {
 			r.URL.Path = "/" + path
-			return e.handler
+			return e.handler, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("no matching route")
 }
 
-func (h *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
+func (igr *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
 	resp, err := ph.ServeRequest(r)
 	select {
 	case <-r.Context().Done():
@@ -82,69 +85,57 @@ func (h *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolH
 		if err != nil {
 			switch r.Header.Get("Accept") {
 			case "application/json":
-				h.writerJSONErr(w, err)
+				igr.writerJSONErr(w, err)
 			default:
-				h.writerErr(w, err)
+				igr.writerTextErr(w, err)
 			}
 			return
 		}
 		// TODO - write some headers also
 		defer resp.Body.Close()
-		h.logger.Printf("Response: %d %s", resp.StatusCode, resp.Status)
 		io.Copy(w, resp.Body)
 	}
 }
 
-func (h *Ingress) writerJSONErr(w http.ResponseWriter, err error) {
+func (igr *Ingress) writerJSONErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "application/json")
 	e := interface{}(err)
 	ge, ok := e.(*errors.Error)
 	if !ok {
-		h.writeInternalErr(w)
+		igr.writeInternalErr(w)
 		return
 	}
-	h.logger.Printf("Response: %d %s", ge.Status, ge.StatusText)
 	data, err := json.Marshal(ge)
 	if err != nil {
-		h.writeInternalErr(w)
+		igr.writeInternalErr(w)
 		return
 	}
 	w.Write(data)
 }
 
-func (h *Ingress) writeInternalErr(w http.ResponseWriter) {
-	h.logger.Printf("Response: %d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+func (igr *Ingress) writerTextErr(w http.ResponseWriter, err error) {
+	w.Header().Add("Content-Type", "text/html")
+	e := interface{}(err)
+	gerr, ok := e.(*errors.Error)
+	if !ok {
+		igr.writeInternalErr(w)
+		return
+	}
+
+	err = writeErrTpl(w, gerr)
+	if err != nil {
+		igr.writeInternalErr(w)
+	}
+}
+
+func (igr *Ingress) writeInternalErr(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
 }
 
-// TODO - pass err template
-func (h *Ingress) writerErr(w http.ResponseWriter, err error) {
-	w.Header().Add("Content-Type", "text/html")
-	e := interface{}(err)
-	ge, ok := e.(*errors.Error)
-	if !ok {
-		// TODO - Move this to writeInternalErr
-		w.WriteHeader(http.StatusInternalServerError)
-		h.logger.Printf("Response: %d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		fmt.Fprintf(w, "Internal error occured")
-		return
-	}
-	h.logger.Printf("Response: %d %s", ge.Status, ge.StatusText)
-	t := template.New("error tpl")
-	t, err = t.Parse(defaultErrTpl)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, ge.Error())
-		return
-	}
-	w.WriteHeader(ge.Status)
-	t.Execute(w, ge)
-}
-
 // RegisterLocProto registers location regex path with a location protocol handler
-func (h *Ingress) RegisterLocProto(pattern string, hdlr ProtocolHandler) {
-	h.routes = append(h.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: hdlr})
+func (igr *Ingress) RegisterLocProto(pattern string, ph ProtocolHandler) {
+	igr.routes = append(igr.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: ph})
 }
 
 type route struct {

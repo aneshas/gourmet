@@ -12,22 +12,27 @@ import (
 )
 
 const (
-	//configFile = "/etc/gourmet/gourmet.conf"
-	configFile = "cmd/gourmetd/example.toml"
+	configFile = "/etc/gourmet/gourmet.toml"
+	logFile    = "/var/log/gourmet/access.log"
 )
 
 func main() {
-	flag.Parse()
 	cfile := flag.String("config", configFile, "path to configuration file")
+	flag.Parse()
 
 	r, err := os.Open(*cfile)
 	checkErr(err)
 
-	// TODO - config.MustParse(r, func(cfg *config.Config) {}) (apply this to stubbing?)
 	cfg, err := config.Parse(r)
 	checkErr(err)
 
-	logger := log.New(os.Stdout, "gourmet => ", log.Ldate|log.Ltime)
+	err = os.MkdirAll("/var/log/gourmet", 0766)
+	checkErr(err)
+
+	file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0766)
+	checkErr(err)
+
+	logger := log.New(file, "gourmet => ", log.Ldate|log.Ltime)
 	ig := ingress.New(logger)
 
 	// TODO - Handle startup / gracefull shutdown better

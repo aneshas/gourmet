@@ -1,5 +1,10 @@
 package ingress
 
+import (
+	"html/template"
+	"net/http"
+)
+
 var defaultErrTpl = `<!doctype html>
 <html>
 <head>
@@ -46,3 +51,15 @@ var defaultErrTpl = `<!doctype html>
     </div>
 </body>
 </html>`
+
+const errTpl = "/etc/gourmet/tpl/error.tpl"
+
+func writeErrTpl(w http.ResponseWriter, i interface{}) error {
+	t := template.New("error-tpl")
+	// TODO - Check if err tpl exists
+	t, err := t.Parse(defaultErrTpl)
+	if err != nil {
+		return err
+	}
+	return t.Execute(w, i)
+}

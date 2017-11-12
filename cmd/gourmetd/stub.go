@@ -23,7 +23,7 @@ func run(ig *ingress.Ingress, cfg *config.Config) func() {
 			qc = append(qc, c)
 			go s.Run(c)
 		}
-		bl := makeBalancer(ups.Balancer, servers)
+		bl := getBalancer(ups.Balancer, servers)
 		m[loc.Path] = bl
 	}
 
@@ -39,7 +39,7 @@ func run(ig *ingress.Ingress, cfg *config.Config) func() {
 	}
 }
 
-func makeBalancer(alg string, s []*upstream.Server) balancer.Balancer {
+func getBalancer(alg string, s []*upstream.Server) balancer.Balancer {
 	switch alg {
 	case config.RoundRobinAlg:
 		return balancer.NewRoundRobin(s)

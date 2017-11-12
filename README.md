@@ -7,13 +7,12 @@
 [![Coverage Status](https://coveralls.io/repos/github/tonto/gourmet/badge.svg?branch=)](https://coveralls.io/github/tonto/gourmet?branch=)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tonto/gourmet)](https://goreportcard.com/report/github.com/tonto/gourmet)
 
-Gourmet is a light weight load balancer written in Go as a personal experiment.
+Gourmet is a light weight load balancer written in Go as a personal experiment. 
+It offers a number of features, such as multiple upstream definitions, multiple upstream backends,
+configurable upstream server balance algorithms, weight, passive health checks etc...
 
-Primary use would be to load balance http requests, but it should be possible to 
-easily extend it to balance any other type of load and/or protocol.
-
-At this moment only round-robin with weight adjustment is available, more coming soon though.
-All balancers also implement configurable passive health checks.
+Primary use for gourmet would be to use it as a reverse proxy to load balance http requests, 
+or to use it as a simple api gateway.
 
 ## Configuration
 Here is an example configuration with all the options that are configurable at this moment:
@@ -67,27 +66,25 @@ Here is an example configuration with all the options that are configurable at t
 - [x] Add pass regexp path match toggle
 - [ ] Health fail recover
 - [ ] SSL configuration support (add server name to config)
-- [ ] Add my toy gopher as a mascot
-- [ ] Add access logs (to stdout, errs to stderr)
-- [ ] CORS Config options for server ???
+- [ ] Implement least_conn and random 
+- [x] Add access log 
 - [ ] Kube provider using endpoints (watch?) and test integration using minikube
-- [ ] Complete test coverage (without compose - see below)
-- [ ] Integration test with missbehaving servers, check results in the end
+- [ ] Complete test coverage 
+- [ ] End to end integration test with missbehaving servers 
 - [ ] Add usage and testing section to readme
-- [ ] Add minimal configuration and full to readme
+- [ ] Add minimal and full config to readme
 - [ ] Explain config sections eg. upstream static and kube provider
 - [ ] Deploy docker image with wercer
 - [X] Move compose to main (pass it as a func to config.Parse?) 
 
-## TODO v0.2.0
-- [ ] Some benchmarks
+## TODO v0.1.1
+- [ ] benchmarks
+- [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
 - [ ] err template file override
 - [ ] Add support for promehteus metrics like eg. infulxdb
 - [ ] provide lets encrypt as an option for automatic ssl
-- [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
-- [ ] Implement least_conn and random 
 
-## TODO Backlog
+## TODO v0.2.0 
 - [ ] Use raw net and TCP instead of HTTP?
 - [ ] Support for multiple servers
 - [ ] Add option to pass custom headers
