@@ -7,7 +7,7 @@ import (
 	"github.com/tonto/gourmet/internal/upstream"
 )
 
-const selectTiemout = 100 * time.Millisecond
+const selectTiemout = 10 * time.Millisecond
 
 // NewRoundRobin creates new RoundRobin instance
 func NewRoundRobin(s []*upstream.Server) *RoundRobin {
