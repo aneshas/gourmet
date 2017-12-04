@@ -51,7 +51,7 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 
 	done := make(chan error)
 
-	s.Enqueue <- upstream.Request{
+	s.Work <- upstream.Request{
 		Done: done,
 		F: func(c context.Context, uri string) error {
 			resp, err := proxyPass(c, uri, r)

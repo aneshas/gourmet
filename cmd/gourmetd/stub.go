@@ -29,7 +29,7 @@ func run(ig *ingress.Ingress, cfg *config.Config) func() {
 
 	for path, h := range m {
 		// TODO - determine type of protocol by looking at Protocol in location list
-		ig.RegisterLocProto(path, protocol.NewHTTP(h))
+		ig.RegisterLocHandler(path, protocol.NewHTTP(h))
 	}
 
 	return func() {

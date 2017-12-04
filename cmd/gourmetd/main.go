@@ -11,16 +11,12 @@ import (
 	"github.com/tonto/kit/http/middleware"
 )
 
-const (
-	configFile = "/etc/gourmet/gourmet.toml"
-	logFile    = "/var/log/gourmet/access.log"
-)
-
 func main() {
-	cfile := flag.String("config", configFile, "path to configuration file")
+	configFile := flag.String("config", "/etc/gourmet/gourmet.toml", "path to configuration file")
+	logFile := flag.String("log", "/var/log/gourmet/access.log", "path to log file")
 	flag.Parse()
 
-	r, err := os.Open(*cfile)
+	r, err := os.Open(*configFile)
 	checkErr(err)
 
 	cfg, err := config.Parse(r)
@@ -29,9 +25,11 @@ func main() {
 	err = os.MkdirAll("/var/log/gourmet", 0766)
 	checkErr(err)
 
-	file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0766)
+	file, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0766)
 	checkErr(err)
 
+	// TODO - Create app or gourmet type or package pass it config and logger
+	// and it should do the stubing and running
 	logger := log.New(file, "gourmet => ", log.Ldate|log.Ltime)
 	ig := ingress.New(logger)
 

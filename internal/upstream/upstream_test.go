@@ -136,7 +136,7 @@ func TestServerHealth(t *testing.T) {
 
 			for i := 0; i < c.numReqs; i++ {
 				req := *c.req(i)
-				srv.Enqueue <- req
+				srv.Work <- req
 				e := <-req.Done
 				if c.expectedErr != nil {
 					assert.Equal(t, c.expectedErr, e)

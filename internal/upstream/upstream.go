@@ -38,9 +38,9 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		o(&cfg)
 	}
 	h := Server{
-		Enqueue: make(chan Request, cfg.queueBufferSz),
-		uri:     uri,
-		config:  cfg,
+		Work:   make(chan Request, cfg.queueBufferSz),
+		uri:    uri,
+		config: cfg,
 	}
 
 	return &h
@@ -49,7 +49,7 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 // Server represents upstream server abstraction
 // It holds server properties and maintains a request queue
 type Server struct {
-	Enqueue  chan Request
+	Work     chan Request
 	uri      string
 	currFail int32
 	config   ServerConfig
@@ -74,7 +74,7 @@ func (s *Server) Weight() int {
 func (s *Server) Run(c chan struct{}) {
 	for {
 		select {
-		case r := <-s.Enqueue:
+		case r := <-s.Work:
 			ctx, cancel := context.WithTimeout(context.Background(), s.config.failTimeout)
 			defer cancel()
 

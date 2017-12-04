@@ -64,31 +64,31 @@ Here is an example configuration with all the options that are configurable at t
 - [x] Passive health checks with max_fail and fail_timeout (per upstream server with defaults if not specified)
 - [x] Add html and json error responses based on Accept header
 - [x] Add pass regexp path match toggle
-- [ ] Health fail recover
-- [ ] SSL configuration support (add server name to config)
-- [ ] Implement least_conn and random 
+- [X] Move compose to main (pass it as a func to config.Parse?) 
 - [x] Add access log 
-- [ ] Kube provider using endpoints (watch?) and test integration using minikube
 - [ ] Complete test coverage 
-- [ ] End to end integration test with missbehaving servers 
+- [ ] Health fail recover
 - [ ] Add usage and testing section to readme
-- [ ] Add minimal and full config to readme
+- [ ] Add minimal and full config to readme (add test for minimal config)
+- [ ] Add queue size to upstream server toml config
+- [ ] Kube provider using endpoints (watch?) and test integration using minikube
+- [ ] Implement least_conn and random 
 - [ ] Explain config sections eg. upstream static and kube provider
 - [ ] Deploy docker image with wercer
-- [X] Move compose to main (pass it as a func to config.Parse?) 
+- [ ] End to end integration test with missbehaving servers 
+- [ ] SSL configuration support (add server name to config)
 
 ## TODO v0.1.1
 - [ ] benchmarks
 - [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
 - [ ] err template file override
 - [ ] Add support for promehteus metrics like eg. infulxdb
-- [ ] provide lets encrypt as an option for automatic ssl
+- [ ] provide lets encrypt as an option for automatic ssl?
 
 ## TODO v0.2.0 
 - [ ] Use raw net and TCP instead of HTTP?
 - [ ] Support for multiple servers
 - [ ] Add option to pass custom headers
-- [ ] Implement different server providers (etcd, consul, ...)
+- [ ] Implement different upstream providers/backends (consul, ..?)
 - [ ] Add at least one more protocol 
-- [ ] Add cmd option (command) to generate config file
 - [ ] Providers and protocols as .so plugins?

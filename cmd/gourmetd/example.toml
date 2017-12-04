@@ -1,7 +1,7 @@
 [upstreams]
     [upstreams.backend]
-        balancer="round_robin"
         provider="static"
+        balancer="round_robin"
 
         [[upstreams.backend.servers]]
             path="localhost:8000"

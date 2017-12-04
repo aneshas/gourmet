@@ -122,7 +122,7 @@ func dummyServers(n int, w bool) []*upstream.Server {
 func failServer(t *testing.T, s *upstream.Server) {
 	assert.True(t, s.Available())
 	done := make(chan error)
-	s.Enqueue <- upstream.Request{
+	s.Work <- upstream.Request{
 		Done: done,
 		F: func(c context.Context, uri string) error {
 			return fmt.Errorf("foo error")

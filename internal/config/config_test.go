@@ -14,6 +14,7 @@ func TestParseConfig(t *testing.T) {
 		expectedCfg *Config
 		expectedErr error
 	}{
+		"invalid_toml_format":      {expectedErr: errInvalidTOML},
 		"upstream_err":             {expectedErr: errNoUpstreams},
 		"static_provider_err":      {expectedErr: errNoServers},
 		"static_provider_path_err": {expectedErr: errNoServerPath},

@@ -52,7 +52,22 @@ func (igr *Ingress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	igr.handleReq(w, r, ph)
 }
 
+func (igr *Ingress) match(r *http.Request) (ProtocolHandler, error) {
+	for _, e := range igr.routes {
+		if path, ok := e.route.match(r.URL.Path); ok {
+			r.URL.Path = "/" + path
+			return e.handler, nil
+		}
+	}
+	return nil, fmt.Errorf("no matching route")
+}
+
 func (igr *Ingress) writeRouteErr(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Add("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"error":"not found"}`)
+		return
+	}
 	err := writeErrTpl(
 		w,
 		errors.New(
@@ -64,16 +79,6 @@ func (igr *Ingress) writeRouteErr(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
-}
-
-func (igr *Ingress) match(r *http.Request) (ProtocolHandler, error) {
-	for _, e := range igr.routes {
-		if path, ok := e.route.match(r.URL.Path); ok {
-			r.URL.Path = "/" + path
-			return e.handler, nil
-		}
-	}
-	return nil, fmt.Errorf("no matching route")
 }
 
 func (igr *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph ProtocolHandler) {
@@ -110,6 +115,7 @@ func (igr *Ingress) writerJSONErr(w http.ResponseWriter, err error) {
 		igr.writeInternalErr(w)
 		return
 	}
+	w.WriteHeader(ge.Status)
 	w.Write(data)
 }
 
@@ -133,8 +139,8 @@ func (igr *Ingress) writeInternalErr(w http.ResponseWriter) {
 	fmt.Fprintf(w, `{"status":500,"status_text":"internal server error"}`)
 }
 
-// RegisterLocProto registers location regex path with a location protocol handler
-func (igr *Ingress) RegisterLocProto(pattern string, ph ProtocolHandler) {
+// RegisterLocHandler registers location regex path with a location protocol handler
+func (igr *Ingress) RegisterLocHandler(pattern string, ph ProtocolHandler) {
 	igr.routes = append(igr.routes, &entry{route: &route{regexp.MustCompile(pattern)}, handler: ph})
 }
 

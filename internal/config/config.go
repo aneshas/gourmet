@@ -31,6 +31,7 @@ var (
 	errNoServerPath      = errors.New("upstream server path must not be empty")
 	errNoServer          = errors.New("server block not present")
 	errNoServerLocations = errors.New("no server locations block present")
+	errInvalidTOML       = errors.New("invalid format for config file")
 )
 
 // Provider represents an interface that should be implemented
@@ -49,7 +50,7 @@ type Provider interface {
 func Parse(r io.Reader) (*Config, error) {
 	cfg, err := parse(r)
 	if err != nil {
-		return nil, err
+		return nil, errInvalidTOML
 	}
 
 	err = cfg.validate()
