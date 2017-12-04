@@ -38,9 +38,10 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		o(&cfg)
 	}
 	h := Server{
-		Work:   make(chan Request, cfg.queueBufferSz),
-		uri:    uri,
-		config: cfg,
+		available: true,
+		Work:      make(chan Request, cfg.queueBufferSz),
+		uri:       uri,
+		config:    cfg,
 	}
 
 	return &h
@@ -49,32 +50,36 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 // Server represents upstream server abstraction
 // It holds server properties and maintains a request queue
 type Server struct {
-	Work     chan Request
-	uri      string
-	currFail int32
-	config   ServerConfig
+	Work      chan Request
+	uri       string
+	currFail  int32
+	config    ServerConfig
+	available bool
 }
 
 // Available returns a bool indicating wether
 // a server is available to receive requests
-func (s *Server) Available() bool {
-	if s.currFail >= int32(s.config.maxFail) {
-		return false
-	}
-	return true
-}
+func (s *Server) Available() bool { return s.available }
 
 // Weight returns weight assigned to upstream server
-func (s *Server) Weight() int {
-	return s.config.weight
-}
+func (s *Server) Weight() int { return s.config.weight }
 
 // Run runs a server
 // It is designed to be run async and closed by sending to c chan
 func (s *Server) Run(c chan struct{}) {
+	ticker := time.NewTicker(s.config.failTimeout)
+	defer ticker.Stop()
 	for {
 		select {
+		case <-ticker.C:
+			if s.currFail >= int32(s.config.maxFail) {
+				s.available = false
+			} else {
+				s.available = true
+			}
+			atomic.StoreInt32(&s.currFail, 0)
 		case r := <-s.Work:
+			// This timeout should probably be a lot shorter and configurable
 			ctx, cancel := context.WithTimeout(context.Background(), s.config.failTimeout)
 			defer cancel()
 

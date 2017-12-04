@@ -14,6 +14,7 @@ func TestServerHealth(t *testing.T) {
 		maxFail              int
 		numReqs              int
 		failTimeout          time.Duration
+		wait                 time.Duration
 		weight               int
 		buffSz               int
 		expectedAvailability bool
@@ -27,6 +28,7 @@ func TestServerHealth(t *testing.T) {
 			weight:               3,
 			buffSz:               10,
 			expectedAvailability: true,
+			wait:                 100 * time.Millisecond,
 			req: func(it int) *Request {
 				return &Request{
 					F: func(context.Context, string) error {
@@ -43,6 +45,7 @@ func TestServerHealth(t *testing.T) {
 			weight:               3,
 			buffSz:               10,
 			expectedAvailability: true,
+			wait:                 1 * time.Second,
 			req: func(it int) *Request {
 				return &Request{
 					F: func(context.Context, string) error {
@@ -62,6 +65,7 @@ func TestServerHealth(t *testing.T) {
 			weight:               3,
 			buffSz:               10,
 			expectedAvailability: true,
+			wait:                 200 * time.Millisecond,
 			req: func(it int) *Request {
 				return &Request{
 					F: func(c context.Context, u string) error {
@@ -85,6 +89,7 @@ func TestServerHealth(t *testing.T) {
 			weight:               3,
 			buffSz:               10,
 			expectedAvailability: false,
+			wait:                 1 * time.Second,
 			req: func(it int) *Request {
 				return &Request{
 					F: func(context.Context, string) error {
@@ -94,29 +99,27 @@ func TestServerHealth(t *testing.T) {
 				}
 			},
 		},
-		"unavailable due to timeouts": {
+		"regain health": {
 			maxFail:              3,
-			numReqs:              5,
-			failTimeout:          100 * time.Millisecond,
+			numReqs:              1000,
+			failTimeout:          1 * time.Second,
 			weight:               3,
 			buffSz:               10,
-			expectedAvailability: false,
+			expectedAvailability: true,
+			wait:                 2200 * time.Millisecond,
 			req: func(it int) *Request {
+				t := time.Now()
 				return &Request{
 					F: func(c context.Context, u string) error {
-						time.Sleep(200 * time.Millisecond)
-						if c.Err() != nil {
-							return ErrPassiveHealthCheck
+						if time.Since(t) > (1 * time.Second) {
+							return nil
 						}
-
-						return nil
+						return fmt.Errorf("some upstream err")
 					},
 					Done: make(chan error, 1),
 				}
 			},
 		},
-
-		// test regain health
 		// test panics on a higher level ??
 		// test panics recover (don't consider this as unhealthy server - test)
 	}
@@ -142,7 +145,7 @@ func TestServerHealth(t *testing.T) {
 					assert.Equal(t, c.expectedErr, e)
 				}
 			}
-
+			time.Sleep(c.wait)
 			assert.Equal(t, c.expectedAvailability, srv.Available())
 			assert.Equal(t, c.weight, srv.Weight())
 
