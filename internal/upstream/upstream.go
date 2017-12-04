@@ -38,7 +38,7 @@ func NewServer(uri string, opts ...ServerOption) *Server {
 		o(&cfg)
 	}
 	h := Server{
-		available: true,
+		available: 1,
 		Work:      make(chan Request, cfg.queueBufferSz),
 		uri:       uri,
 		config:    cfg,
@@ -54,12 +54,15 @@ type Server struct {
 	uri       string
 	currFail  int32
 	config    ServerConfig
-	available bool
+	available uint32
 }
 
 // Available returns a bool indicating wether
 // a server is available to receive requests
-func (s *Server) Available() bool { return s.available }
+func (s *Server) Available() bool { 
+	v := atomic.LoadUint32(&s.available)
+	return (v > 0) 
+}
 
 // Weight returns weight assigned to upstream server
 func (s *Server) Weight() int { return s.config.weight }
@@ -73,9 +76,9 @@ func (s *Server) Run(c chan struct{}) {
 		select {
 		case <-ticker.C:
 			if s.currFail >= int32(s.config.maxFail) {
-				s.available = false
+				atomic.StoreUint32(&s.available, 0)
 			} else {
-				s.available = true
+				atomic.StoreUint32(&s.available, 1)
 			}
 			atomic.StoreInt32(&s.currFail, 0)
 		case r := <-s.Work:
