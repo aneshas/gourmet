@@ -9,9 +9,9 @@
 
 Gourmet is a light weight load balancer written in Go as a personal experiment. 
 It offers a number of features, such as multiple upstream definitions, multiple upstream backends,
-configurable upstream server balance algorithms, weight, passive health checks etc...
+configurable upstream load balancing algorithms, weight, passive health checks etc...
 
-Primary use for gourmet would be to use it as a reverse proxy to load balance http requests, 
+Primary use for gourmet would as a reverse proxy to load balance http requests, 
 or to use it as a simple api gateway.
 
 ## Configuration
@@ -66,8 +66,8 @@ Here is an example configuration with all the options that are configurable at t
 - [x] Add pass regexp path match toggle
 - [X] Move compose to main (pass it as a func to config.Parse?) 
 - [x] Add access log 
-- [ ] Complete test coverage 
 - [x] Health fail recover
+- [ ] Complete test coverage 
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal and full config to readme (add test for minimal config)
 - [ ] Add queue size to upstream server toml config
