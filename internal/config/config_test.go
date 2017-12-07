@@ -38,6 +38,15 @@ func TestParseConfig(t *testing.T) {
 				Server: &Server{Port: 80, Locations: []ServerLocation{ServerLocation{Path: "/api", HTTPPass: "backend"}, ServerLocation{Path: "/", HTTPPass: "front"}}},
 			},
 		},
+		"valid_random": {
+			expectedCfg: &Config{
+				Upstreams: map[string]*Upstream{
+					"front":   &Upstream{Balancer: "random", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo.com", Weight: 5, MaxFail: 15, FailTimeout: 5}}},
+					"backend": &Upstream{Balancer: "round_robin", Provider: "static", Servers: []*UpstreamServer{&UpstreamServer{Path: "http://api.foo1.com", Weight: 5, MaxFail: 10, FailTimeout: 1}, &UpstreamServer{Path: "http://api.foo2.com", Weight: 0, MaxFail: 10, FailTimeout: 1}}},
+				},
+				Server: &Server{Port: 80, Locations: []ServerLocation{ServerLocation{Path: "/api", HTTPPass: "backend"}, ServerLocation{Path: "/", HTTPPass: "front"}}},
+			},
+		},
 		// TODO
 		// Add tests for misspelled options eg. round_rob
 	}

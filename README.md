@@ -67,12 +67,13 @@ Here is an example configuration with all the options that are configurable at t
 - [X] Move compose to main (pass it as a func to config.Parse?) 
 - [x] Add access log 
 - [x] Health fail recover
+- [x] Implement random
 - [ ] Complete test coverage 
 - [ ] Add usage and testing section to readme
 - [ ] Add minimal and full config to readme (add test for minimal config)
 - [ ] Add queue size to upstream server toml config
 - [ ] Kube provider using endpoints (watch?) and test integration using minikube
-- [ ] Implement least_conn and random 
+- [ ] Implement least_conn  
 - [ ] Explain config sections eg. upstream static and kube provider
 - [ ] Deploy docker image with wercer
 - [ ] End to end integration test with missbehaving servers 

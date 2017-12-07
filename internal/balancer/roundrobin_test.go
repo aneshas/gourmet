@@ -127,5 +127,4 @@ func failServer(t *testing.T, s *upstream.Server) {
 		},
 	}
 	<-done
-	// assert.False(t, s.Available())
 }

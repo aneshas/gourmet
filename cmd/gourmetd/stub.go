@@ -43,6 +43,8 @@ func getBalancer(alg string, s []*upstream.Server) balancer.Balancer {
 	switch alg {
 	case config.RoundRobinAlg:
 		return balancer.NewRoundRobin(s)
+	case config.RandomAlg:
+		return balancer.NewRandom(s)
 	}
 	return nil
 }

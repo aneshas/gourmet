@@ -12,6 +12,9 @@ import (
 const (
 	// RoundRobinAlg represents round robin balancer config label
 	RoundRobinAlg = "round_robin"
+
+	// RandomAlg represents random balancer config label
+	RandomAlg = "random"
 )
 
 const (
