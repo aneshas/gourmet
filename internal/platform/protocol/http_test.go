@@ -203,16 +203,6 @@ func spinUpUpstreams() func() {
 		Handler: http.DefaultServeMux,
 	}
 
-	sendReq := func(r *http.Request) {
-		b, _ := ioutil.ReadAll(r.Body)
-		m.Lock()
-		chans[r.Header.Get("X-Test-Name")] <- epreq{
-			r: *r,
-			b: string(b),
-		}
-		m.Unlock()
-	}
-
 	http.DefaultServeMux.HandleFunc("/headers", func(w http.ResponseWriter, r *http.Request) {
 		sendReq(r)
 	})
@@ -244,6 +234,16 @@ func spinUpUpstreams() func() {
 	return func() {
 		s.Shutdown(context.Background())
 	}
+}
+
+func sendReq(r *http.Request) {
+	m.Lock()
+	b, _ := ioutil.ReadAll(r.Body)
+	chans[r.Header.Get("X-Test-Name")] <- epreq{
+		r: *r,
+		b: string(b),
+	}
+	m.Unlock()
 }
 
 type mockbl struct {
