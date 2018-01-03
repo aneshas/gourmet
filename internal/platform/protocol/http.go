@@ -17,11 +17,11 @@ func NewHTTP(bl balancer.Balancer, opts ...HTTPOption) *HTTP {
 	for _, o := range opts {
 		o(&cfg)
 	}
-	s := HTTP{
+	h := HTTP{
 		balancer: bl,
 		config:   cfg,
 	}
-	return &s
+	return &h
 }
 
 // HTTP represents http upstream pass
@@ -36,7 +36,7 @@ type Config struct {
 	requestTimeout time.Duration
 }
 
-// ServeRequest implement ProtocolHandler ingress interface
+// ServeRequest passes request to upstream server
 func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 	var response *http.Response
 
@@ -54,7 +54,7 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 	s.Work <- upstream.Request{
 		Done: done,
 		F: func(c context.Context, uri string) error {
-			resp, err := proxyPass(c, uri, r)
+			resp, err := ht.proxyPass(c, uri, r)
 			if err != nil {
 				return err
 			}
@@ -67,8 +67,8 @@ func (ht *HTTP) ServeRequest(r *http.Request) (*http.Response, error) {
 	return response, err
 }
 
-func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, error) {
-	req, err := wrapRequest(uri, r)
+func (ht *HTTP) proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, error) {
+	req, err := ht.wrapRequest(uri, r)
 	if err != nil {
 		return nil, err
 	}
@@ -87,15 +87,24 @@ func proxyPass(c context.Context, uri string, r *http.Request) (*http.Response, 
 		)
 	}
 
+	if resp.StatusCode == http.StatusServiceUnavailable {
+		return nil, errors.New(
+			resp.StatusCode,
+			resp.Status,
+			"upstream server unavailable",
+		)
+	}
+
 	return resp, nil
 }
 
-func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
+func (ht *HTTP) wrapRequest(uri string, r *http.Request) (*http.Request, error) {
 	// TODO - detect protocol from location http_pass xxx_pass
 	uuri := "http://" + strings.TrimRight(uri, "/") + r.URL.Path
 	if r.URL.RawQuery != "" {
 		uuri += "?" + r.URL.RawQuery
 	}
+
 	req, err := http.NewRequest(r.Method, uuri, r.Body)
 	if err != nil {
 		return nil, err
@@ -104,6 +113,12 @@ func wrapRequest(uri string, r *http.Request) (*http.Request, error) {
 	for h, v := range r.Header {
 		if v != nil && len(v) > 0 && v[0] != "" {
 			req.Header.Add(h, v[0])
+		}
+	}
+
+	if ht.config.passHeaders != nil {
+		for h, v := range ht.config.passHeaders {
+			req.Header.Add(h, v)
 		}
 	}
 

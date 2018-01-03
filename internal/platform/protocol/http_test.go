@@ -25,7 +25,15 @@ const (
 	balancerPath = "http://localhost:8080"
 )
 
-func TestHTTPUpstreamRequest(t *testing.T) {
+var m sync.Mutex
+var chans = make(map[string]chan epreq)
+
+type epreq struct {
+	r http.Request
+	b string
+}
+
+func TestHTTPServeRequest(t *testing.T) {
 	cases := map[string]struct {
 		opts          []protocol.HTTPOption
 		bl            *mockbl
@@ -33,18 +41,18 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 		reqMtd        string
 		reqBody       []byte
 		headers       map[string]string
+		wantHeaders   map[string]string
 		customHeaders map[string]string
-		// assert tests upstream request
-		assert func(*testing.T, http.Request)
-		// TODO - Add expected response
-		assertResp func()
+		assert        func(*testing.T, epreq)
+		assertResp    func()
+		wantErr       bool
 	}{
 		"test automatic headers": {
 			bl:     &mockbl{RW: &rw{}},
 			reqMtd: "GET",
 			reqURL: "/headers",
-
-			assert: func(t *testing.T, r http.Request) {
+			assert: func(t *testing.T, req epreq) {
+				r := req.r
 				assert.Equal(t, "/headers", r.URL.Path)
 				assert.Equal(t, "Close", r.Header.Get("Connection"))
 				assert.Equal(t, "localhost:8080", r.Header.Get("X-Forwarded-Host"))
@@ -52,12 +60,30 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 				assert.Equal(t, http.NoBody, r.Body)
 			},
 		},
-		"test headers pass": {
-			bl:      &mockbl{RW: &rw{}},
-			reqMtd:  "POST",
-			reqURL:  "/headers",
-			reqBody: []byte("test body"),
+		"test req headers": {
+			bl:     &mockbl{RW: &rw{}},
+			reqMtd: "POST",
+			reqURL: "/headers",
 			headers: map[string]string{
+				"Content-Type":  "application/json",
+				"X-Some-Header": "1024",
+			},
+			wantHeaders: map[string]string{
+				"Content-Type":  "application/json",
+				"X-Some-Header": "1024",
+			},
+		},
+		"test headers pass": {
+			bl:     &mockbl{RW: &rw{}},
+			reqMtd: "POST",
+			reqURL: "/headers",
+			opts: []protocol.HTTPOption{
+				protocol.WithHTTPHeaders(map[string]string{
+					"Content-Type":  "application/json",
+					"X-Some-Header": "1024",
+				}),
+			},
+			wantHeaders: map[string]string{
 				"Content-Type":  "application/json",
 				"X-Some-Header": "1024",
 			},
@@ -66,9 +92,9 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 			bl:     &mockbl{RW: &rw{}},
 			reqMtd: "GET",
 			reqURL: "/headers?foo=bar&bar=baz",
-			assert: func(t *testing.T, r http.Request) {
-				assert.Equal(t, "bar", r.URL.Query().Get("foo"))
-				assert.Equal(t, "baz", r.URL.Query().Get("bar"))
+			assert: func(t *testing.T, r epreq) {
+				assert.Equal(t, "bar", r.r.URL.Query().Get("foo"))
+				assert.Equal(t, "baz", r.r.URL.Query().Get("bar"))
 			},
 		},
 		"test request body": {
@@ -76,21 +102,43 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 			reqMtd:  "POST",
 			reqURL:  "/headers",
 			reqBody: []byte("test body"),
-			assert: func(t *testing.T, r http.Request) {
-				b, _ := ioutil.ReadAll(r.Body)
-				assert.Equal(t, []byte("test body"), b)
+			assert: func(t *testing.T, r epreq) {
+				assert.Equal(t, "test body", r.b)
 			},
 		},
-
-		// TODO - Test error paths here and below
+		"test svc unavailable": {
+			bl:      &mockbl{RW: &rw{}},
+			reqMtd:  "POST",
+			reqURL:  "/unavailable",
+			reqBody: []byte("test body"),
+			wantErr: true,
+		},
+		"test upstreams unavailable": {
+			bl:      &mockbl{RW: &rw{}, Err: true},
+			reqMtd:  "POST",
+			reqURL:  "/unavailable",
+			reqBody: []byte("test body"),
+			wantErr: true,
+		},
+		"test req timeout": {
+			bl:     &mockbl{RW: &rw{}},
+			reqMtd: "POST",
+			reqURL: "/timeout",
+			opts: []protocol.HTTPOption{
+				protocol.WithHTTPRequestTimeout(time.Millisecond),
+			},
+			wantErr: true,
+		},
 	}
 
-	uc, close := spinUpUpstreams()
+	close := spinUpUpstreams()
 	defer close()
-	m := sync.Mutex{}
 
 	for name, c := range cases {
+		chans[name] = make(chan epreq, 5)
 		t.Run(name, func(t *testing.T) {
+			c := c
+
 			h := protocol.NewHTTP(c.bl, c.opts...)
 
 			var body io.Reader
@@ -109,48 +157,31 @@ func TestHTTPUpstreamRequest(t *testing.T) {
 				}
 			}
 
+			_, err := h.ServeRequest(r)
+
+			if c.wantErr != (err != nil) {
+				t.Fatalf("error should be %v got: %v", c.wantErr, err)
+			}
+
+			if c.wantErr && (err != nil) {
+				return
+			}
+
 			m.Lock()
-			uc[name] = make(chan http.Request)
+			req := <-chans[name]
 			m.Unlock()
-
-			go func() { h.ServeRequest(r) }()
-
-			time.Sleep(10 * time.Millisecond)
-
-			req := <-uc[name]
 
 			if c.assert != nil {
 				c.assert(t, req)
 			}
 
-			if c.headers != nil {
-				for h, v := range c.headers {
-					assert.Equal(t, v, req.Header.Get(h))
+			if c.wantHeaders != nil {
+				for h, v := range c.wantHeaders {
+					assert.Equal(t, v, req.r.Header.Get(h))
 				}
 			}
 		})
 	}
-}
-
-// TODO - Move this to ingress_test.go
-func TestHTTPUpstreamResponse(t *testing.T) {
-	/*
-		"test request timeout": {
-			bl:     &mockbl{RW: &rw{}},
-			reqMtd: "GET",
-			reqURL: "/headers",
-			requestTimeout: 1*time.Nanosecond
-			// TODO - Add timed out page
-		},
-	*/
-
-	// test error pages in cmd when doing functional(
-	// also test assemble there (input config yaml and test the whole integration)
-	// Test timeout and error response codes
-
-	// TODO - Test response body
-	// test response headers
-	// test response code
 }
 
 func testIP(expected, ip string) bool {
@@ -166,28 +197,51 @@ func doReq(r *http.Request) {
 	http.DefaultClient.Do(r)
 }
 
-func spinUpUpstreams() (map[string]chan http.Request, func()) {
-	c := make(map[string]chan http.Request)
+func spinUpUpstreams() func() {
 	s := http.Server{
 		Addr:    "localhost:8081",
 		Handler: http.DefaultServeMux,
 	}
+
+	sendReq := func(r *http.Request) {
+		b, _ := ioutil.ReadAll(r.Body)
+		m.Lock()
+		chans[r.Header.Get("X-Test-Name")] <- epreq{
+			r: *r,
+			b: string(b),
+		}
+		m.Unlock()
+	}
+
 	http.DefaultServeMux.HandleFunc("/headers", func(w http.ResponseWriter, r *http.Request) {
-		c[r.Header.Get("X-Test-Name")] <- *r
+		sendReq(r)
 	})
+
+	http.DefaultServeMux.HandleFunc("/timeout", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Millisecond)
+		sendReq(r)
+	})
+
+	http.DefaultServeMux.HandleFunc("/unavailable", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		sendReq(r)
+	})
+
 	http.DefaultServeMux.HandleFunc("/success", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "response body")
-		c[r.Header.Get("X-Test-Name")] <- *r
+		sendReq(r)
 	})
+
 	http.DefaultServeMux.HandleFunc("/internal_error", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "response body")
-		c[r.Header.Get("X-Test-Name")] <- *r
+		sendReq(r)
 	})
+
 	// TODO - Add more endpoints with responses
 	go func() { s.ListenAndServe() }()
-	return c, func() {
+	return func() {
 		s.Shutdown(context.Background())
 	}
 }
@@ -195,11 +249,13 @@ func spinUpUpstreams() (map[string]chan http.Request, func()) {
 type mockbl struct {
 	Next *upstream.Server
 	RW   http.ResponseWriter
+	Err  bool
 }
 
-type rw struct{}
-
 func (m *mockbl) NextServer() (*upstream.Server, error) {
+	if m.Err {
+		return nil, fmt.Errorf("upstream unavailable")
+	}
 	m.Next = newServer()
 	return m.Next, nil
 }
@@ -207,7 +263,7 @@ func (m *mockbl) NextServer() (*upstream.Server, error) {
 func newServer() *upstream.Server {
 	s := upstream.NewServer(
 		"localhost:8081/",
-		upstream.WithFailTimeout(5*time.Second),
+		upstream.WithFailTimeout(10*time.Millisecond),
 		upstream.WithMaxFail(10),
 		upstream.WithQueueSize(1),
 	)
@@ -218,6 +274,8 @@ func newServer() *upstream.Server {
 	return s
 }
 
+type rw struct{}
+
 func (r *rw) Header() http.Header {
 	return make(http.Header)
 }
@@ -226,6 +284,4 @@ func (r *rw) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-func (r *rw) WriteHeader(int) {
-
-}
+func (r *rw) WriteHeader(int) {}

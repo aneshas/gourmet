@@ -34,9 +34,11 @@ type ServerConfig struct {
 // and starts queue handler
 func NewServer(uri string, opts ...ServerOption) *Server {
 	cfg := ServerConfig{}
+
 	for _, o := range opts {
 		o(&cfg)
 	}
+
 	h := Server{
 		available: 1,
 		Work:      make(chan Request, cfg.queueBufferSz),
@@ -59,9 +61,9 @@ type Server struct {
 
 // Available returns a bool indicating wether
 // a server is available to receive requests
-func (s *Server) Available() bool { 
+func (s *Server) Available() bool {
 	v := atomic.LoadUint32(&s.available)
-	return (v > 0) 
+	return (v > 0)
 }
 
 // Weight returns weight assigned to upstream server
@@ -72,6 +74,7 @@ func (s *Server) Weight() int { return s.config.weight }
 func (s *Server) Run(c chan struct{}) {
 	ticker := time.NewTicker(s.config.failTimeout)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
