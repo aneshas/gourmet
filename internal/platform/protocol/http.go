@@ -99,6 +99,8 @@ func (ht *HTTP) proxyPass(c context.Context, uri string, r *http.Request) (*http
 }
 
 func (ht *HTTP) wrapRequest(uri string, r *http.Request) (*http.Request, error) {
+	defer r.Body.Close()
+
 	// TODO - detect protocol from location http_pass xxx_pass
 	uuri := "http://" + strings.TrimRight(uri, "/") + r.URL.Path
 	if r.URL.RawQuery != "" {

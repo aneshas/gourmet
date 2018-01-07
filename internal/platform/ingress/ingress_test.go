@@ -32,21 +32,21 @@ func TestIngress(t *testing.T) {
 		{
 			name:     "test get route",
 			method:   "GET",
-			url:      "/api/foo",
+			url:      "http://api.foo.com/foo",
 			want:     "/foo",
 			wantCode: http.StatusOK,
 		},
 		{
 			name:     "test get route full path",
 			method:   "GET",
-			url:      "/static/bar/baz",
-			want:     "/static/bar/baz",
+			url:      "http://foo.com/bar/baz",
+			want:     "/bar/baz",
 			wantCode: http.StatusOK,
 		},
 		{
 			name:     "test post route",
 			method:   "POST",
-			url:      "/api/foo",
+			url:      "http://api.foo.com/foo",
 			body:     "post body",
 			want:     "post body",
 			wantCode: http.StatusOK,
@@ -62,18 +62,32 @@ func TestIngress(t *testing.T) {
 		{
 			name:     "test json error",
 			method:   "GET",
-			url:      "/api/jsonerr",
+			url:      "http://api.foo.com/jsonerr",
 			want:     `{"status":400,"status_text":"Bad Request","description":"/jsonerr"}`,
 			json:     true,
 			wantCode: http.StatusBadRequest,
 		},
 		{
+			name:     "test text error",
+			method:   "GET",
+			url:      "http://api.foo.com/jsonerr",
+			json:     false,
+			wantCode: http.StatusBadRequest,
+		},
+		{
 			name:     "test internal error",
 			method:   "GET",
-			url:      "/api/internalerr",
+			url:      "http://api.foo.com/internalerr",
 			want:     `{"status":500,"status_text":"internal server error"}`,
 			json:     true,
 			wantCode: http.StatusInternalServerError,
+		},
+		{
+			name:     "test not found",
+			method:   "GET",
+			url:      "http://api.404.com/foo",
+			json:     false,
+			wantCode: http.StatusNotFound,
 		},
 	}
 	igr := makeigr()
@@ -93,7 +107,9 @@ func TestIngress(t *testing.T) {
 			}
 			igr.ServeHTTP(w, r)
 			body, _ := ioutil.ReadAll(w.Body)
-			assert.Equal(t, []byte(c.want), body)
+			if c.want != "" {
+				assert.Equal(t, []byte(c.want), body)
+			}
 			assert.Equal(t, c.wantCode, w.Code)
 		})
 	}
@@ -101,8 +117,8 @@ func TestIngress(t *testing.T) {
 
 func makeigr() *Ingress {
 	igr := New(log.New(os.Stdout, "ingress test => ", log.Ldate|log.Ltime|log.Lshortfile))
-	igr.RegisterLocHandler("api/(.+)/?", phandler{})
-	igr.RegisterLocHandler("(static/bar/.+/?)", phandler{})
+	igr.RegisterLocHandler("api.foo.com/(.+)/?", phandler{})
+	igr.RegisterLocHandler("foo.com/(bar/.+/?)", phandler{})
 	return igr
 }
 

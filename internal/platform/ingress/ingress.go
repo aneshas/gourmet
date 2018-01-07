@@ -54,7 +54,8 @@ func (igr *Ingress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (igr *Ingress) match(r *http.Request) (ProtocolHandler, error) {
 	for _, e := range igr.routes {
-		if path, ok := e.route.match(r.URL.Path); ok {
+		str := r.Host + r.URL.Path
+		if path, ok := e.route.match(str); ok {
 			r.URL.Path = "/" + path
 			return e.handler, nil
 		}
@@ -68,6 +69,9 @@ func (igr *Ingress) writeRouteErr(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"error":"not found"}`)
 		return
 	}
+
+	w.WriteHeader(http.StatusNotFound)
+
 	err := writeErrTpl(
 		w,
 		errors.New(
@@ -76,6 +80,7 @@ func (igr *Ingress) writeRouteErr(w http.ResponseWriter, r *http.Request) {
 			"the path "+r.URL.Path+" could not be found on the server.",
 		),
 	)
+
 	if err != nil {
 		http.NotFound(w, r)
 	}
@@ -104,29 +109,35 @@ func (igr *Ingress) handleReq(w http.ResponseWriter, r *http.Request, ph Protoco
 
 func (igr *Ingress) writerJSONErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "application/json")
+
 	e := interface{}(err)
 	ge, ok := e.(*errors.Error)
 	if !ok {
 		igr.writeInternalErr(w)
 		return
 	}
+
 	data, err := json.Marshal(ge)
 	if err != nil {
 		igr.writeInternalErr(w)
 		return
 	}
+
 	w.WriteHeader(ge.Status)
 	w.Write(data)
 }
 
 func (igr *Ingress) writerTextErr(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "text/html")
+
 	e := interface{}(err)
 	gerr, ok := e.(*errors.Error)
 	if !ok {
 		igr.writeInternalErr(w)
 		return
 	}
+
+	w.WriteHeader(gerr.Status)
 
 	err = writeErrTpl(w, gerr)
 	if err != nil {

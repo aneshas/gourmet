@@ -5,7 +5,10 @@
 
         [[upstreams.backend.servers]]
             path="localhost:8000"
-            weight=5    
+            weight=2    
+            fail_timeout=3
+            max_fail=1
+            
         [[upstreams.backend.servers]]
             path="google.com"
 
@@ -21,7 +24,7 @@
     port=8081
 
     [[server.locations]]
-        path="api/(.+)/?"
+        path="localhost:8081/api/(.+)/?"
         http_pass="backend"
     [[server.locations]]
         path="static/bar/(.+/?)"
