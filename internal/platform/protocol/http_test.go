@@ -135,7 +135,10 @@ func TestHTTPServeRequest(t *testing.T) {
 	defer close()
 
 	for name, c := range cases {
+		m.Lock()
 		chans[name] = make(chan epreq, 5)
+		m.Unlock()
+
 		t.Run(name, func(t *testing.T) {
 			c := c
 
