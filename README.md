@@ -72,21 +72,20 @@ Here is an example configuration with all the options that are configurable at t
 - [ ] Kube provider using endpoints (watch?) and test integration using minikube
 - [ ] Implement least_conn  
 - [ ] Explain config sections eg. upstream static and kube provider
-- [ ] Deploy docker image with wercer
-- [ ] End to end integration test with missbehaving servers 
+- [ ] Deploy docker image with wercker
+- [ ] End to end integration test (minikube / sidecar proxy) 
 - [ ] SSL configuration support (add server name to config)
 
-## TODO v0.1.1
+## v0.1.1 ideas
 - [ ] benchmarks
-- [ ] Add description about internals (eg. what headers are set, which are returns, how are errors and timeouts handled etc...)
 - [ ] err template file override
-- [ ] Add support for promehteus metrics like eg. infulxdb
+- [ ] Add observability support (tracing, configurable logging, prometheus stats)
 - [ ] provide lets encrypt as an option for automatic ssl?
 
-## TODO v0.2.0 
-- [ ] Use raw net and TCP instead of HTTP?
+## v0.2.0 ideas
+- [ ] Use raw net and TCP instead of HTTP
 - [ ] Support for multiple servers
 - [ ] Add option to pass custom headers
-- [ ] Implement different upstream providers/backends (consul, ..?)
-- [ ] Add at least one more protocol 
+- [ ] Implement different upstream providers/backends (service discovery options) eg. consul...
+- [ ] Add more protocols
 - [ ] Providers and protocols as .so plugins?
