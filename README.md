@@ -7,12 +7,9 @@
 [![codecov](https://codecov.io/gh/tonto/gourmet/branch/master/graph/badge.svg)](https://codecov.io/gh/tonto/gourmet)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tonto/gourmet)](https://goreportcard.com/report/github.com/tonto/gourmet)
 
-Gourmet is a light weight load balancer written in Go as a personal experiment. 
-It offers a number of features, such as multiple upstream definitions, multiple upstream backends,
-configurable upstream load balancing algorithms, weight, passive health checks etc...
-
-Primary use for gourmet would as a reverse proxy to load balance http requests, 
-or to use it as a simple api gateway.
+Gourmet is a light weight L7 proxy written in Go as a personal experiment. 
+It offers a number of features, such as service discovery (static/dynamic), load balancing, 
+passive health checks, TLS termination etc...
 
 ## Configuration
 Here is an example configuration with all the options that are configurable at this moment:

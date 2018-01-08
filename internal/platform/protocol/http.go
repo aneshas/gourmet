@@ -87,7 +87,7 @@ func (ht *HTTP) proxyPass(c context.Context, uri string, r *http.Request) (*http
 		)
 	}
 
-	if resp.StatusCode == http.StatusServiceUnavailable {
+	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return nil, errors.New(
 			resp.StatusCode,
 			resp.Status,
